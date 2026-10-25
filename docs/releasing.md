@@ -4,7 +4,7 @@ Release titles and notes are written manually. The workflow only builds and uplo
 
 ## Prepare the source
 
-1. Set the intended version in `package.json`, `package-lock.json` and the lockfile's root package entry. Keep current-version documentation in sync. The first stable version is `1.0.0`.
+1. Set the intended version in `package.json`, `package-lock.json` and the lockfile's root package entry. Record the version in release notes and `CHROMEWEBSTORE.md`. READMEs link to `releases/latest` and describe package names without a fixed release number; keep release-specific versions, store-review status and validation records in their dedicated documents.
 2. Complete the relevant Chrome checks in [release-smoke.md](release-smoke.md).
 3. Commit and merge the release changes, including `.github/workflows/release.yml`, before creating the release tag. The tag must point to the prepared source commit, not an older version.
 
