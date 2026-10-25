@@ -20,12 +20,13 @@ import { Button } from '../../components/ui/button';
 import { normalizeCollectOptions } from '../../lib/collectOptions';
 import { collectPage } from '../../lib/collect';
 import { analysisKey, readAnalysis } from '../../lib/analysisState';
+import { analysisFilter, chosenAnalysisImages, filterImageResults } from '../../lib/selection';
 import { archiveActive, archivesFromStorage, readArchives, requiredOrigins } from '../../lib/archiveState';
 import { withTimeout } from '../../lib/timeout';
 import { parsePageUrls, sortHtmlFiles, type HtmlFileOrder } from '../../lib/batchInputs';
 import type { AnalysisState, ArchiveBatch } from '../../lib/types';
 
-type Row = { file?: File; warning?: string; phase?: 'queued' | 'running' | 'done' | 'failed' | 'stopped'; id: string; url: string; title: string; tabId?: number; count?: number; error?: string; launchError?: string; batchId?: string; archive?: ArchiveBatch; analysisStatus?: AnalysisState['status'] };
+type Row = { file?: File; warning?: string; phase?: 'queued' | 'running' | 'done' | 'failed' | 'stopped'; id: string; url: string; title: string; tabId?: number; resultCount?: number; count?: number; error?: string; launchError?: string; batchId?: string; archive?: ArchiveBatch; analysisStatus?: AnalysisState['status'] };
 type Plan = { rowId: string; job: string; selected: string[] };
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : t("操作失败，请重试。");
 
@@ -83,7 +84,7 @@ export function Tools() {
         setRows(current => current.map(row => {
           if (row.tabId === undefined || !(analysisKey(row.tabId) in changes)) return row;
           const state = changes[analysisKey(row.tabId)]?.newValue as AnalysisState | undefined;
-          return { ...row, title: state?.title || row.title, count: state?.status === 'done' ? state.selected.length : 0,
+          return { ...row, title: state?.title || row.title, count: state?.status === 'done' ? chosenAnalysisImages(state).length : 0, resultCount: state?.status === 'done' ? filterImageResults(state.results, analysisFilter(state), '').length : 0,
             phase: state?.status === 'done' ? 'done' : state?.status === 'running' ? 'running' : 'failed', analysisStatus: state?.status, warning: unresolvedImageMessage(state?.unresolvedCount || 0), error: !state ? t("页面结果已失效，请重新提取。") : state.status === 'error' ? state.message : undefined };
         }));
       } else if (area === 'local') {
@@ -131,11 +132,11 @@ export function Tools() {
           if (!response?.ok) throw new Error(response?.message || t("提取失败"));
           const state = await readAnalysis(tab.id);
           if (state?.status !== 'done') throw new Error(state?.message || t("未获得结果"));
-          patch(row.id, { title: state.title || url, count: state.selected.length, phase: 'done', analysisStatus: state.status, error: undefined });
+          patch(row.id, { title: state.title || url, count: chosenAnalysisImages(state).length, resultCount: filterImageResults(state.results, analysisFilter(state), '').length, phase: 'done', analysisStatus: state.status, error: undefined });
         } catch (error) { patch(row.id, { phase: signal.aborted ? 'stopped' : 'failed', error: signal.aborted ? t("已停止") : errorMessage(error) }); }
         signal.throwIfAborted();
       }
-      setMessage(t("提取完成。可打开网页检查，或按各页默认选择下载。"));
+      setMessage(t("提取完成。请打开各页，通过插件勾选图像或全选，再返回这里下载。"));
     } catch (error) { setMessage(errorMessage(error)); }
     finally { finish(); }
   }
@@ -173,7 +174,7 @@ export function Tools() {
           const result = await chrome.runtime.sendMessage({ type: 'IMPORT_CAPTURE', capture });
           if (!result?.ok) throw new Error(result?.message || t("导入失败"));
           const state = await readAnalysis(result.tabId);
-          patch(row.id, { tabId: result.tabId, title: capture.title, count: state?.selected.length ?? result.count, warning: unresolvedImageMessage(state?.unresolvedCount ?? result.unresolvedCount ?? 0), phase: 'done', analysisStatus: 'done' });
+          patch(row.id, { tabId: result.tabId, title: capture.title, count: state ? chosenAnalysisImages(state).length : 0, resultCount: state ? filterImageResults(state.results, analysisFilter(state), '').length : result.count, warning: unresolvedImageMessage(state?.unresolvedCount ?? result.unresolvedCount ?? 0), phase: 'done', analysisStatus: 'done' });
         } catch (error) { patch(row.id, { phase: signal.aborted ? 'stopped' : 'failed', error: signal.aborted ? t("已停止") : errorMessage(error) }); }
         signal.throwIfAborted();
       }
@@ -189,10 +190,11 @@ export function Tools() {
         signal.throwIfAborted();
         const state = await readAnalysis(row.tabId!); signal.throwIfAborted();
         if (state?.status !== 'done') continue;
-        patch(row.id, { count: state.selected.length, title: state.title || row.title, error: undefined, launchError: undefined, analysisStatus: state.status });
-        if (!state.selected.length) continue;
-        plans.push({ rowId: row.id, job: state.job, selected: state.selected });
-        addresses.push(...state.results.filter(item => state.selected.includes(item.id)).map(item => item.url));
+        patch(row.id, { count: chosenAnalysisImages(state).length, resultCount: filterImageResults(state.results, analysisFilter(state), '').length, title: state.title || row.title, error: undefined, launchError: undefined, analysisStatus: state.status });
+        const chosen = chosenAnalysisImages(state);
+        if (!chosen.length) continue;
+        plans.push({ rowId: row.id, job: state.job, selected: chosen.map(item => item.id) });
+        addresses.push(...chosen.map(item => item.url));
       }
       setDownloadPlan(plans); setDownloadOrigins(requiredOrigins(addresses));
       setMessage(plans.length ? t("已核对选定图像，请点击“允许并开始下载”。每个网页分别保存 ZIP。") : t("没有可下载的选定图像，请打开结果页选择图像后重试。"));
@@ -284,7 +286,7 @@ export function Tools() {
               <div className="tools-row-heading"><span className="tools-row-index">{index + 1}</span><p title={row.title}>{row.title}</p><Badge variant="secondary" className="tools-row-state" data-state={row.phase}>{row.phase === 'running' ? <><LoaderCircle className="animate-spin" />{t("处理中")}</> : row.phase === 'failed' ? <><CircleAlert />{t("失败")}</> : row.phase === 'done' ? <><Check />{t("已提取")}</> : row.phase === 'stopped' ? t("未完成") : t("等待中")}</Badge></div>
               {row.warning && <Alert className="tools-notice" role="status">{translateMessage(row.warning)}</Alert>}
               {row.url && <p className="tools-row-url" title={row.url}>{row.url}</p>}
-              <div className="tools-row-details"><p className={row.error || row.launchError ? 'error' : ''}>{row.archive ? t("{0}（{1} 成功 / {2} 失败）", [translateMessage(row.archive.message), row.archive.items.filter(item => item.status === 'complete').length, row.archive.items.filter(item => item.status === 'failed').length]) : translateMessage(row.launchError || row.error) || (row.batchId ? t("下载已启动") : row.phase === 'stopped' ? t("本轮未完成，可重新提取。") : row.phase === 'queued' ? t("等待前面的网页处理完成") : row.analysisStatus === 'running' || row.count === undefined ? t("正在读取图像…") : t('选定图像：{0}', [row.count]))}</p><div>{row.file && (row.error || row.warning) && !row.batchId && <Button variant="outline" size="sm" disabled={busy} onClick={() => { setMode('html'); if (!base.trim()) { setBaseError(t("请填写原网页地址，再点击此文件的重试按钮。")); requestAnimationFrame(() => baseInput.current?.focus()); } else void importFiles(row); }}>{t("补充地址后重试")}</Button>}{row.archive?.tabId !== undefined && <Button variant="outline" size="sm" onClick={() => openTab(row.archive!.tabId!)}>{archiveActive(row.archive) ? t("下载进度") : t("下载结果")}</Button>}{row.tabId !== undefined && <Button variant="ghost" size="sm" onClick={() => openTab(row.tabId!)}>{t("打开")}<ExternalLink aria-hidden="true" /></Button>}</div></div>
+              <div className="tools-row-details"><p className={row.error || row.launchError ? 'error' : ''}>{row.archive ? t("{0}（{1} 成功 / {2} 失败）", [translateMessage(row.archive.message), row.archive.items.filter(item => item.status === 'complete').length, row.archive.items.filter(item => item.status === 'failed').length]) : translateMessage(row.launchError || row.error) || (row.batchId ? t("下载已启动") : row.phase === 'stopped' ? t("本轮未完成，可重新提取。") : row.phase === 'queued' ? t("等待前面的网页处理完成") : row.analysisStatus === 'running' || row.count === undefined ? t("正在读取图像…") : t('发现 {0} 张图像，已选 {1} 张', [row.resultCount ?? 0, row.count]))}</p><div>{row.file && (row.error || row.warning) && !row.batchId && <Button variant="outline" size="sm" disabled={busy} onClick={() => { setMode('html'); if (!base.trim()) { setBaseError(t("请填写原网页地址，再点击此文件的重试按钮。")); requestAnimationFrame(() => baseInput.current?.focus()); } else void importFiles(row); }}>{t("补充地址后重试")}</Button>}{row.archive?.tabId !== undefined && <Button variant="outline" size="sm" onClick={() => openTab(row.archive!.tabId!)}>{archiveActive(row.archive) ? t("下载进度") : t("下载结果")}</Button>}{row.tabId !== undefined && <Button variant="ghost" size="sm" onClick={() => openTab(row.tabId!)}>{t("打开")}<ExternalLink aria-hidden="true" /></Button>}</div></div>
             </li>)}</ul>
             <div className="tools-results-actions"><p>{downloadPlan.length ? t("已核对 {0} 页，请确认下载权限。", [downloadPlan.length]) : t("使用各页当前选定的图像，每个网页分别保存 ZIP。")}</p><Button disabled={busy || !eligible} onClick={downloadPlan.length ? confirmDownload : downloadAll}><Download aria-hidden="true" />{downloadPlan.length ? t("允许并开始下载") : t("下载各页选定图像")}</Button></div>
           </>}

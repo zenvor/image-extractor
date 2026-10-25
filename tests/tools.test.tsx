@@ -11,7 +11,7 @@ let listeners: Set<(changes: Record<string, chrome.storage.StorageChange>, area:
 let send: ReturnType<typeof vi.fn>, create: ReturnType<typeof vi.fn>, request: ReturnType<typeof vi.fn>;
 function state(tabId: number, count = 1): AnalysisState {
   return { tabId, job: 'job-' + tabId, url: `https://example.org/${tabId}`, title: 'Page ' + tabId, status: 'done', started: 0, total: count, truncated: false, message: '',
-    selected: count ? ['0'] : [], results: count ? [{ id: '0', url: 'https://images.example.org/photo.jpg', source: '', label: 'photo', candidate: true, reason: '', width: 0, height: 0 }] : [] };
+    selectionMode: 'custom', selectionFilter: 'large', selected: count ? ['0'] : [], results: count ? [{ id: '0', url: 'https://images.example.org/photo.jpg', source: '', label: 'photo', candidate: true, reason: '', width: 0, height: 0 }] : [] };
 }
 function changed(value: AnalysisState) {
   session['analysis:' + value.tabId] = value;
@@ -225,7 +225,8 @@ it('displays the exact missing-address warning even when an import has usable re
   await chooseFiles([new File(['<img src="a.jpg">'], 'mixed.html')]); await click('开始导入');
   expect(container.textContent).toContain('2 个相对图像地址无法解析');
   expect(container.textContent).toContain('补充地址后重试');
-  expect(button('下载各页选定图像').disabled).toBe(false);
+  expect(button('下载各页选定图像').disabled).toBe(true);
+  expect(container.textContent).toContain('发现 1 张图像，已选 0 张');
 });
 
 it('localizes tools and validation without losing the entered URLs', async () => {
@@ -243,4 +244,23 @@ it('localizes tools and validation without losing the entered URLs', async () =>
     expect(create).not.toHaveBeenCalled();
     expect(document.title).toBe('Image Extractor · Batch image extraction');
   } finally { await act(async () => { await setLanguagePreference('zh-CN'); }); }
+});
+
+it('does not prepare legacy automatic selections and shows found images separately', async () => {
+  send.mockImplementation(async (message: { tabId: number }) => { changed({ ...state(message.tabId), selectionMode: 'all' }); return { ok: true }; });
+  await batch(1);
+  expect(container.textContent).toContain('发现 1 张图像，已选 0 张');
+  expect(button('下载各页选定图像').disabled).toBe(true);
+  expect(send.mock.calls.some(([message]) => message.type === 'DOWNLOAD_ZIP')).toBe(false);
+});
+it('prepares only explicit choices in the current image mode', async () => {
+  await batch(1);
+  const selected = state(1);
+  selected.results.push({ ...selected.results[0]!, id: 'page', source: 'https://page.test/thumb.jpg', url: 'https://page.test/thumb.jpg', candidate: false });
+  selected.selected = ['0', 'page']; selected.selectionFilter = 'large';
+  await act(async () => changed(selected));
+  expect(container.textContent).toContain('发现 1 张图像，已选 1 张');
+  await click('下载各页选定图像'); await click('允许并开始下载');
+  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: selected.job, selected: ['0'] });
+  expect(request).toHaveBeenLastCalledWith({ permissions: ['downloads'], origins: ['https://images.example.org/*'] });
 });

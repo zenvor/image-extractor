@@ -1,5 +1,5 @@
 import { imageFormats } from '../../lib/urlImageFormat';
-import { defaultImageFilter, selectBySize } from '../../lib/selection';
+import { defaultImageFilter } from '../../lib/selection';
 import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../../lib/extractionVersion';
 import type { AnalysisState, ArchiveBatch, ImageResult } from '../../lib/types';
 
@@ -16,7 +16,7 @@ const samples = fitPreview ? [
 ] : sceneLabels.map((label, index) => ({ label, filename: 'landscape-' + index + '.jpg', source: '/preview/scene-' + (index + 1) + '.svg' }));
 const sampleState: AnalysisState = {
   job: 'preview', resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId: 1, url: 'https://example.org/gallery', title: fitPreview ? '横图、竖图与小图标' : '山与海 · 旅行影集',
-  status: 'done', started: Date.now(), total: samples.length, truncated: false, message: '', selected: samples.map((_, index) => String(index * 2)), selectionMode: 'large', selectionFilter: 'large',
+  status: 'done', started: Date.now(), total: samples.length, truncated: false, message: '', selected: [], selectionMode: 'custom', selectionFilter: 'large',
   results: Array.from({ length: samples.length * 2 }, (_, index) => ({
     id: String(index), url: 'https://example.org/' + (index % 2 ? 'thumbs' : 'photos') + '/' + samples[index >> 1]!.filename,
     source: new URL(feedbackPreview && index < 2 ? '/preview/retry-demo.svg' : samples[index >> 1]!.source, location.href).href,
@@ -35,11 +35,11 @@ const sidebarResults: ImageResult[] = sidebarPreview ? sidebarFormats.flatMap(({
 }))) : [];
 const layoutPreviewState: AnalysisState = sidebarPreview ? {
   ...sampleState, title: '侧栏布局 · 本地图像样例', results: sidebarResults, total: sidebarResults.length,
-  selected: sidebarResults.map(item => item.id), truncated: previewMode === 'sidebar-all',
+  selected: [], truncated: previewMode === 'sidebar-all',
 } : sampleState;
 const previewResults = previewMode === 'thumbs' ? sampleState.results.filter(item => !item.candidate) : layoutPreviewState.results;
 export const previewFilter = defaultImageFilter(previewResults);
-export const previewState: AnalysisState = { ...layoutPreviewState, results: previewResults, selected: selectBySize(previewResults, previewFilter), selectionMode: previewFilter, selectionFilter: previewFilter };
+export const previewState: AnalysisState = { ...layoutPreviewState, results: previewResults, selected: [], selectionMode: 'custom', selectionFilter: previewFilter };
 export const previewArchive: ArchiveBatch | undefined = feedbackPreview ? {
   id: 'preview-feedback', title: '下载反馈 · 本地演示', filename: '本地演示.zip', pageUrl: previewState.url, sourceTabId: 1,
   items: previewResults.filter(item => item.candidate).map((item, index) => ({ id: item.id, url: item.url, kind: 'large', filename: item.id, status: index === 0 ? 'failed' : 'complete' })),

@@ -1,4 +1,4 @@
-import type { ImageFilter, ImageResult, SelectionMode } from './types';
+import type { AnalysisState, ImageFilter, ImageResult, SelectionMode } from './types';
 import { imageFormat, type ImageFormat } from './urlImageFormat';
 
 export function defaultImageFilter(_results: ImageResult[]): ImageFilter {
@@ -34,4 +34,18 @@ export function updateVisibleSelection(selected: string[], visible: ImageResult[
     else ids.add(item.id);
   }
   return [...ids];
+}
+
+/** Legacy automatic selections are not evidence of a user's choice. */
+export function userSelectedIds(state?: AnalysisState): string[] {
+  return state?.selectionMode === 'custom' ? state.selected : [];
+}
+
+export function analysisFilter(state?: AnalysisState): 'page' | 'large' {
+  return state?.selectionFilter === 'large' || !state?.selectionFilter && state?.selectionMode === 'large' ? 'large' : 'page';
+}
+
+export function chosenAnalysisImages(state: AnalysisState): ImageResult[] {
+  const selected = new Set(userSelectedIds(state));
+  return filterImageResults(state.results, analysisFilter(state), '').filter(item => selected.has(item.id));
 }

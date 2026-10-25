@@ -23,7 +23,7 @@ import { archiveFeedback } from '../../lib/archiveFeedback';
 import { requestArchiveRetry, requestArchiveResume } from '../../lib/requestArchiveRetry';
 import { purgeStaleArchiveFiles } from '../../lib/archiveFiles';
 import { canResumeArchive, canRetryArchive, archiveActive, archiveForPage, archivesFromStorage, isArchiveKey, requiredOrigins, ARCHIVE_KEY } from '../../lib/archiveState';
-import { filterImageResults, selectBySize, updateVisibleSelection } from '../../lib/selection';
+import { analysisFilter, filterImageResults, userSelectedIds, updateVisibleSelection } from '../../lib/selection';
 import { imageFormat, imageFormats, type ImageFormat } from '../../lib/urlImageFormat';
 import { withTimeout } from '../../lib/timeout';
 import { archiveFilename, pageFolderName } from '../../lib/outputNaming.js';
@@ -86,8 +86,8 @@ export default function App() {
     if (value && !match) return;
     setState(match);
     if (!saving.current || !match || match.status !== 'done') {
-      setSelected(match?.selected || []);
-      setFilter(match?.selectionFilter === 'large' || match?.selectionMode === 'large' && !match.selectionFilter ? 'large' : 'page');
+      setSelected(userSelectedIds(match));
+      setFilter(analysisFilter(match));
     }
   }
 
@@ -217,7 +217,7 @@ export default function App() {
   function chooseOriginalMode(enabled: boolean) {
     const scope: ImageFilter = enabled ? 'large' : 'page';
     setFilter(scope); setExcludedFormats(new Set());
-    select(selectBySize(results, scope), scope, scope);
+    select(selected, 'custom', scope);
   }
   function toggleFormat(format: ImageFormat) {
     setExcludedFormats(current => {
@@ -238,7 +238,7 @@ export default function App() {
     if (preview) {
       setExtracted(true);
       setState({ ...previewState, job: 'preview-' + Date.now(), started: Date.now() });
-      select(selectBySize(previewState.results, filter), filter, filter);
+      select([], 'custom', filter);
       setFeedback(t("已重新读取本地样例")); return;
     }
     if (page.id !== undefined) await performAnalysis(page.id, scroll);
@@ -339,7 +339,7 @@ export default function App() {
             </div>
             <div className="bulk-actions" role="group" aria-label={t("批量选择图像")}>
               <Button variant="outline" size="sm" className="select-all-button" onClick={selectVisible} disabled={!visible.length} title={t("选中当前显示的所有图像")}><CheckCheck aria-hidden="true" />{t("全选")}</Button>
-              <Button variant="outline" size="sm" className="deselect-all-button" onClick={clearSelection} disabled={!chosen.length} title={t("取消所有图像的勾选，包括筛选隐藏的图像")}><CircleMinus aria-hidden="true" />{t("取消全选")}</Button>
+              <Button variant="outline" size="sm" className="deselect-all-button" onClick={clearSelection} disabled={!selected.length} title={t("取消所有图像的勾选，包括筛选隐藏的图像")}><CircleMinus aria-hidden="true" />{t("取消全选")}</Button>
             </div>
           </div>
           <Button size="sm" className="zip-button" onClick={() => download()} disabled={starting || running || activeArchive || !chosen.length} aria-label={activeArchive ? t("下载任务进行中") : starting ? t("准备下载") : t('下载所选内容（{0}）', [chosen.length])}>{starting || activeArchive ? <LoaderCircle className="animate-spin" /> : <ArrowDownToLine />}{activeArchive ? downloadFeedback?.title : starting ? t("准备下载…") : t('下载所选内容（{0}）', [chosen.length])}</Button>

@@ -217,3 +217,14 @@ it('reports denied folder permission and open errors without starting a transfer
   expect(container.querySelector('[role=alert]')?.textContent).toBe('请在 Chrome 下载列表中查看 ZIP。');
   expect(runArchive).not.toHaveBeenCalled();
 });
+
+it('shows imported HTML source metadata without replacing the workspace identity', async () => {
+  const imported = { ...batch('1', 'complete'), title: 'gallery.html', pageUrl: 'chrome-extension://example/popup.html?workspace=1', sourceUrl: 'https://gallery.test/original/' };
+  records[archiveKey('1')] = imported;
+  records[archiveKey('2')] = { ...imported, id: '2', sourceUrl: undefined };
+  await mount();
+  expect(card('1').textContent).toContain('https://gallery.test/original/');
+  expect(card('1').textContent).not.toContain('chrome-extension://');
+  expect(card('2').textContent).toContain('本地 HTML：gallery.html');
+  expect(imported.pageUrl).toBe('chrome-extension://example/popup.html?workspace=1');
+});

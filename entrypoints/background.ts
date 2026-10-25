@@ -8,7 +8,7 @@ import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../lib/extracti
 import type { AnalysisState, ImageResult, Request, SelectionMode } from '../lib/types';
 import { advanceDownloads, failDownloads, startDownloads } from '../lib/downloads';
 import { withTimeout } from '../lib/timeout';
-import { defaultImageFilter, filterImageResults, selectBySize } from '../lib/selection';
+import { analysisFilter, defaultImageFilter, filterImageResults, selectBySize } from '../lib/selection';
 import { resumeArchive, retryArchive, startArchive, interruptArchive, recoverArchive, pruneArchives, openArchivePage } from '../lib/archiveState';
 import { readAnalysis, findAnalysis, saveAnalysis, clearAnalysis } from '../lib/analysisState';
 
@@ -56,8 +56,8 @@ async function analyze(tabId: number, preferredMode?: SelectionMode, scroll = fa
       state.results = resolveImages(page);
       state.title = page.title;
       const resolvedMode = requestedMode || defaultImageFilter(state.results);
-      state.selected = selectBySize(state.results, resolvedMode);
-      state.selectionMode = resolvedMode;
+      state.selected = [];
+      state.selectionMode = 'custom';
       state.selectionFilter = resolvedMode;
       state.total = page.total;
       state.truncated = page.truncated || state.results.length >= 12000;
@@ -130,7 +130,7 @@ export default defineBackground(() => {
           if (tab.id === undefined) throw new Error('无法创建导入结果页。');
           const mode = defaultImageFilter(results);
           const tabId = tab.id;
-          await orderedAnalysis(tabId, () => saveAnalysis({ job: crypto.randomUUID(), resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId, url: workspaceUrl, status: 'done', started: Date.now(), title: capture.title, message: warning, unresolvedCount, total: capture.total, truncated: capture.truncated, results, selected: selectBySize(results, mode), selectionMode: mode, selectionFilter: mode }));
+          await orderedAnalysis(tabId, () => saveAnalysis({ job: crypto.randomUUID(), resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId, url: workspaceUrl, sourceUrl: /^https?:\/\//.test(capture.url) ? capture.url : undefined, status: 'done', started: Date.now(), title: capture.title, message: warning, unresolvedCount, total: capture.total, truncated: capture.truncated, results, selected: [], selectionMode: 'custom', selectionFilter: mode }));
           respond({ ok: true, tabId: tab.id, count: selectBySize(results, mode).length, unresolvedCount, message: warning }); return;
         } else if (message.type === 'SELECT') {
           const { job, selected, mode, filter } = message;
@@ -166,10 +166,10 @@ export default defineBackground(() => {
             if (state?.job !== message.job || state.status !== 'done' || !Array.isArray(message.selected)) throw new Error('结果已变化，请重新选择图像。');
             if (!(await chrome.permissions.contains({ permissions: ['downloads'] }))) throw new Error('请先允许下载权限。');
             if (!attachDownloadListener()) throw new Error('Chrome 下载接口不可用，请重载插件后重试。');
-            const pageMode = state.selectionFilter === 'page';
-            const scope = pageMode ? filterImageResults(state.results, 'page', '') : state.results;
+            const pageMode = analysisFilter(state) === 'page';
+            const scope = filterImageResults(state.results, analysisFilter(state), '');
             const selected = selectedResults(scope, message.selected).map(item => pageMode ? { ...item, candidate: false } : item);
-            if (message.type === 'DOWNLOAD_ZIP') created = await startArchive(selected, state.title || '', state.url, state.tabId);
+            if (message.type === 'DOWNLOAD_ZIP') created = await startArchive(selected, state.title || '', state.url, state.tabId, state.sourceUrl);
             else await startDownloads(selected, state.url);
           });
           respond({ ok: true, ...created }); return;

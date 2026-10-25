@@ -149,7 +149,9 @@ it('opportunistically prunes old history when a new ZIP task launches', async ()
   freeze();
   const s = store([record('old', {}, 30 * DAY), record('fresh', {}, DAY)]);
   stubChrome(s.local, { tabs: { create: async () => ({ id: 50 }), get: async () => ({ id: 1 }) } });
-  const created = await startArchive([image], '页面', 'https://example.org/new', 9);
+  const created = await startArchive([image], '页面', 'https://example.org/new', 9, 'https://source.test/gallery/');
+  expect((await readArchive(created.batchId))?.sourceUrl).toBe('https://source.test/gallery/');
+  expect((await readArchive(created.batchId))?.pageUrl).toBe('https://example.org/new');
   expect(s.ids()).toEqual(['fresh', created.batchId].sort());
 });
 
@@ -215,12 +217,13 @@ it('a failing cleanup never blocks starting the task', async () => {
 
 it('retrying a failed ZIP is never blocked by pruning its own old source', async () => {
   freeze();
-  const source = record('src', { status: 'partial', sourceTabId: 7, items: [{ id: '0', url: 'https://a.test/a.jpg', kind: 'large', filename: '001_a.jpeg', status: 'failed', error: 'HTTP 503' }] }, 30 * DAY);
+  const source = record('src', { status: 'partial', sourceTabId: 7, sourceUrl: 'https://source.test/imported/', items: [{ id: '0', url: 'https://a.test/a.jpg', kind: 'large', filename: '001_a.jpeg', status: 'failed', error: 'HTTP 503' }] }, 30 * DAY);
   const s = store([source]);
   stubChrome(s.local, { tabs: { create: async () => ({ id: 52 }), get: async () => ({ id: 1 }) } });
   const created = await retryArchive('src');
   expect(s.ids()).toEqual(['src', created.batchId].sort());
   expect((await readArchive('src'))?.retryBatchId).toBe(created.batchId);
+  expect((await readArchive(created.batchId))?.sourceUrl).toBe('https://source.test/imported/');
 });
 
 function opfs(names: string[]) {

@@ -1,12 +1,12 @@
 # Manual Chrome acceptance for the first release candidate
 
-Current source version: 0.6.5. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
+Current source version: 0.6.6. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
 
 ## Preparation
 
 1. Finish any active downloads before replacing or reloading the installed extension.
 2. Load the verified candidate at `.output-staged/chrome-mv3`, or synchronize it to the existing unpacked installation and reload that installation manually. Do not leave duplicate extension instances enabled.
-3. Confirm that Download policy uses the five-step slider. The version remains 0.6.5, so version text alone does not prove the new build is loaded.
+3. Confirm version 0.6.6 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
 4. From the project root, start the local fixtures: `python3 examples/release-smoke.py`.
 5. Open `http://127.0.0.1:8197` in Chrome. The fixtures use local SVG files, not external image hosts. Request counters distinguish image previews from other requests using Sec-Fetch-Dest; they are diagnostic counts, not measured network concurrency.
 
@@ -19,13 +19,22 @@ Current source version: 0.6.5. Run these checks against the exact built package 
 - **Failed-only retry:** Open `/retry`, clear counters, and download all three images. Two should succeed and the retry image should fail with controlled HTTP 404. Select Repair failed image on the webpage, then retry only failed images in the extension. Refresh request counters: successful images must not be fetched again. Verify the supplementary ZIP contains only the failed image with its original path and number.
 - **Cancel and resume:** Open `/resume`, clear counters, and start all six images. Four complete quickly; two take about 36 seconds. Cancel while slow images are still transferring, then continue the incomplete task. Completed cached images should be reused; interrupted files should be requested again. Verify the resulting ZIP.
 - **Page isolation:** While `/resume` is running, open `/page-b` in another tab and open the extension there. It should show that page's independent image and controls rather than inherit the first page's progress.
-- **Page images and original matching:** Confirm matching is off on a newly analyzed page, only discovered page URLs are shown, enabling matching shows only rule matches, and an unsupported page shows an empty state. Returning to page images restores its results. Turning off all Other image sources must still extract ordinary images.
+- **Page images and original matching:** Confirm matching is off on a newly analyzed page, only discovered page URLs are shown and none is selected, enabling matching shows only rule matches, and an unsupported page shows an empty state. Returning to page images restores its results and explicit choices without selecting new images. Re-extraction starts unselected; reopening cached results retains manual choices. Verify legacy automatic selections do not become batch download choices. Turning off all Other image sources must still extract ordinary images.
 - **Popup bounds:** With a running download, progress must not add a sidebar scrollbar. Export TXT and check the toast does not create horizontal or vertical window scrollbars. Repeat in English and Chinese, including failed/resumable tasks. Format tags should match the compact card badges.
 - **Slider:** Verify five discrete positions, Medium by default unless a prior preference exists, keyboard arrows/Home/End, and restoring the saved value after reopening.
 
 If a problem occurs, record the scenario, displayed message, ZIP contents, and request counters. Do not mark this checklist passed solely from unit tests or HTTP fixture self-checks.
 
 Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitoring is required.
+
+## Manual selection acceptance (2026-10-25, version 0.6.6)
+
+- Chrome confirmed Reloaded and version 0.6.6; the shared manager had 19 historical tasks and 0 active downloads.
+- NASA's real lunar-flyby gallery produced 201 discovered URLs. New results had zero checked images and disabled bulk download, copy and TXT actions.
+- With `art002e009` filtering 21 results, individual choices changed the download count to 1 and 2. Select all selected those 21 results. Enabling original matching on this unsupported page showed zero matches without enabling bulk download; Deselect all could still clear the hidden choices. Returning to page images retained zero selections.
+- A manually selected image and the English language survived closing and reopening the popup. Re-extraction cleared the image selection. The interface language was restored to Simplified Chinese afterward.
+- Astra's screenshot review identified hidden unchecked controls; these now remain visible before hover, and both screenshots were recaptured from the reloaded build.
+- Original-size English and Chinese screenshots are stored in [screenshots](screenshots/README.md). These checks started no image download and do not replace the separate transfer/save scenarios above.
 
 ## Inline task information acceptance (2026-10-25)
 

@@ -77,7 +77,9 @@ assert.equal(storage['analysis:1'].resolverVersion, ORIGINAL_RESOLVER_VERSION + 
 assert.equal(storage['analysis:1'].results.find(image => image.candidate && image.source === images[0].currentSrc).url, 'https://i02.imx.to/i/2026/09/26/765kix.jpg');
 assert.equal(storage['analysis:1'].results.filter(image => image.candidate).length, 1000);
 assert.equal(storage['analysis:1'].results.filter(image => !image.candidate).length, 1000);
-assert.equal(storage['analysis:1'].selected.length, 1000);
+assert.equal(storage['analysis:1'].selected.length, 0);
+const pageImageIds = storage['analysis:1'].results.filter(image => !image.candidate).map(image => image.id);
+assert.equal((await send({ type: 'SELECT', job: storage['analysis:1'].job, selected: pageImageIds, mode: 'custom', filter: 'page' })).ok, true);
 assert.equal(storage['analysis:1'].title, 'Local landscape fixture');
 assert.equal((await send({ type: 'DOWNLOAD', job: storage['analysis:1'].job, selected: storage['analysis:1'].selected })).ok, false);
 
@@ -108,7 +110,8 @@ assert.equal(archive.items[999].filename, '1000_mountain-999.jpeg');
 assert.equal(archive.tabId, 99);
 const pageAJob = storage['analysis:1'].job;
 assert.equal((await send({ type: 'ANALYZE', tabId: 2, mode: 'large' })).ok, true);
-assert.equal((await send({ type: 'DOWNLOAD_ZIP', job: storage['analysis:2'].job, selected: storage['analysis:2'].selected.slice(0, 1) })).ok, true);
+assert.equal(storage['analysis:2'].selected.length, 0);
+assert.equal((await send({ type: 'DOWNLOAD_ZIP', job: storage['analysis:2'].job, selected: storage['analysis:2'].results.filter(image => image.candidate).slice(0, 1).map(image => image.id) })).ok, true);
 const archives = Object.values(local).filter(value => value?.sourceTabId);
 assert.equal(archives.length, 2);
 assert.equal(archives.find(value => value.sourceTabId === 2).filename, 'Page B fixture.zip');
@@ -163,7 +166,7 @@ if (process.env.IMAGE_CAPTURE_FIXTURE) {
   const originals = result.analysis.results.filter(image => image.candidate && new URL(image.url).hostname === 'i02.imx.to');
   assert.equal(originals.length, 200);
   assert.ok(originals.some(image => image.url === 'https://i02.imx.to/i/2026/05/24/6s79sr.jpg'));
-  assert.equal(result.analysis.selected.length, 200);
+  assert.equal(result.analysis.selected.length, 0);
   await replay.happyDOM.close();
   console.log(JSON.stringify({ actualPageDomReplay: 'passed', originals: originals.length, selected: result.analysis.selected.length }));
 }

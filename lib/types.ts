@@ -35,6 +35,8 @@ export interface ImageResult {
   height: number;
 }
 export interface AnalysisState {
+  /** Display-only original webpage URL for imported HTML; url stays the workspace identity. */
+  sourceUrl?: string;
   unresolvedCount?: number;
   job: string;
   resolverVersion?: string;
@@ -78,6 +80,8 @@ export type Request =
 
 export interface ArchiveItem { id: string; url: string; kind: 'large' | 'small'; filename: string; status: 'pending' | 'complete' | 'failed'; error?: string; bytes?: number }
 export interface ArchiveBatch {
+  /** Display-only source metadata; pageUrl remains the task isolation key. */
+  sourceUrl?: string;
   id: string; title: string; filename: string; pageUrl: string; items: ArchiveItem[];
   sourceTabId?: number;
   cacheUntil?: number;

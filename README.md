@@ -6,7 +6,15 @@
 
 Image Extractor works with the current webpage, batches of URLs, and saved HTML files. Preview and filter page images, optionally enable original matching, then download a ZIP, copy the selected URLs, or export a link list. Downloads support failed-only retries, cache-based recovery, and five adjustable download policies.
 
-Current version: **0.6.5**. Install as an unpacked Chrome extension using the instructions below.
+Current version: **0.6.6**. Install as an unpacked Chrome extension using the instructions below.
+
+## Screenshots
+
+Real Chrome extension captures at 1628 × 1228, showing NASA's lunar-flyby gallery filtered by `art002e009`. The English view has two manually selected images; new results start unselected, as shown in the [Chinese capture](docs/screenshots/popup-zh-CN.jpg).
+
+![Image Extractor in Chrome with two manually selected NASA images](docs/screenshots/popup-en.jpg)
+
+Imagery credit: NASA, from the [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). These interface examples do not imply NASA affiliation or endorsement. [Capture details](docs/screenshots/README.md).
 
 ## Features
 
@@ -40,11 +48,11 @@ Load the build directory, not the source directory. Builds do not launch or relo
 
 1. Open a page containing images. Complete any website verification yourself and load the desired page content.
 2. Open Image Extractor. It automatically analyzes a new page and restores matching results when available. Use **Extract images** to refresh results.
-3. Choose page images (default) or enable **Match original images**, then use format and search filters. Switching mode selects its results; search and format filters preserve hidden selections within that mode. **Select all** selects visible results; **Deselect all** clears every selection, including hidden ones.
+3. Choose page images (default) or enable **Match original images**, then use format and search filters. New extraction results start with nothing selected. Click individual images or use **Select all**. Switching mode does not add selections; previous manual choices are retained, and downloads, copying and TXT export use only the current mode. Reopening the same results restores your manual choices; re-extracting starts a new, unselected result set. Search and format filters preserve hidden selections within that mode. **Select all** selects visible results; **Deselect all** clears every selection, including hidden ones.
 4. Choose a download policy, then select **Download selected**. Chrome requests download and image-host access permissions when needed.
 5. Open **Download task** in the sidebar to view all page downloads in one place. You may close the popup; keep the download manager open until its tasks finish.
 6. Use the sidebar **Copy URLs** and **Export TXT** buttons. Single-image actions copy a URL or save that image in a ZIP.
-7. Open **Batch / HTML** in the sidebar for batch processing. Review extraction results before starting downloads. Optional bounded scrolling loads more page content and then restores the scroll position.
+7. Open **Batch / HTML** in the sidebar for batch processing. Open each webpage and choose images through the extension, or open an imported HTML result workspace and choose images there, before starting downloads. Optional bounded scrolling loads more page content and then restores the scroll position.
 
 **Other image sources** controls icons, CSS backgrounds, and embedded images/SVG and takes effect on the next extraction. Disabling all additional sources still extracts ordinary page images. The download slider previews a policy while dragging and saves it on release; arrow keys, Home, and End also work. Settings synchronize across task pages.
 
@@ -52,7 +60,7 @@ Load the build directory, not the source directory. Builds do not launch or relo
 
 All webpages share one task overview. Each task has its own selection snapshot, progress, cancellation, failed-only retry, and cache recovery. Closing this page interrupts the tasks it is running; completed cached files can be reused when recovery is available.
 
-- **Read the results in the row:** ZIP filename, full source URL, successful/failed image counts, file size, and failure causes are shown directly. Long failure lists scroll within the row; no separate details dialog is needed.
+- **Read the results in the row:** ZIP filename, source webpage URL (or the local HTML label when no original page URL was provided), successful/failed image counts, file size, and failure causes are shown directly. Long failure lists scroll within the row; no separate details dialog is needed.
 - **Distinguish processing from saving:** Purple means successful images, amber means failed images, and gray means pending images. A fully processed bar can include failures. Packing and saving remain indeterminate until Chrome confirms the ZIP save.
 - **Recover only what is missing:** Retry failed images without fetching successful ones again, or resume an interrupted task from valid local cache. Each action affects only its own task.
 - **Open the downloads folder:** The single button above the table opens Chrome's default downloads folder. It applies to all tasks.

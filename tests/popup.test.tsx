@@ -14,7 +14,7 @@ const results = ['海岸线', '城市日落', '山间晨光'].flatMap((label, in
 })));
 const fixture = (): AnalysisState => ({
   job: 'test', resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId: 7, url: 'https://example.org/gallery', title: '测试图集', status: 'done', started: Date.now(),
-  total: 3, truncated: false, message: '', results, selected: ['L0', 'L1', 'L2'], selectionMode: 'large', selectionFilter: 'large',
+  total: 3, truncated: false, message: '', results, selected: ['L0', 'L1', 'L2'], selectionMode: 'custom', selectionFilter: 'large',
 });
 let analysis: AnalysisState | undefined;
 let root: Root | undefined;
@@ -64,7 +64,7 @@ beforeEach(() => {
   request = vi.fn(async () => true);
   send = vi.fn(async (message: Request) => {
     if (message.type === 'SELECT' && analysis) changed({ ...analysis, selected: message.selected, selectionMode: message.mode || 'custom', selectionFilter: message.filter || analysis.selectionFilter });
-    if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh' });
+    if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh', selected: [], selectionFilter: message.mode === 'large' ? 'large' : 'page' });
     return { ok: true };
   });
   vi.stubGlobal('chrome', {
@@ -85,23 +85,23 @@ it('automatically reads a new page once and reuses a matching cached analysis', 
   analysis = undefined;
   await mount();
   expect(send.mock.calls.filter(([message]) => message.type === 'ANALYZE')).toEqual([[{ type: 'ANALYZE', tabId: 7 }]]);
-  expectDownloadCount(3);
+  expectDownloadCount(0);
   await act(async () => root!.unmount()); root = undefined;
   await mount();
   expect(send.mock.calls.filter(([message]) => message.type === 'ANALYZE')).toHaveLength(1);
 });
 it('shows only page URLs by default and switches to matched originals without combining the two', async () => {
-  analysis = { ...fixture(), selected: ['S0', 'S1', 'S2'], selectionMode: 'page', selectionFilter: 'page' };
+  analysis = { ...fixture(), selected: ['S0', 'S1', 'S2'], selectionMode: 'custom', selectionFilter: 'page' };
   await mount();
   expect(container.querySelector('.image-type-select')).toBeNull();
   expect(container.querySelector('.original-mode-switch')?.getAttribute('aria-checked')).toBe('false');
   expect([...container.querySelectorAll('.item-checkbox')].map(el => el.id)).toEqual(['image-S0', 'image-S1', 'image-S2']);
   expect(container.querySelector('.kind-label')).toBeNull();
   await click('.original-mode-switch');
-  expect(analysis).toMatchObject({ selectionMode: 'large', selected: ['L0', 'L1', 'L2'] });
+  expect(analysis).toMatchObject({ selectionMode: 'custom', selected: ['S0', 'S1', 'S2'], selectionFilter: 'large' });
   expect([...container.querySelectorAll('.item-checkbox')].map(el => el.id)).toEqual(['image-L0', 'image-L1', 'image-L2']);
   await click('.original-mode-switch');
-  expect(analysis).toMatchObject({ selectionMode: 'page', selected: ['S0', 'S1', 'S2'] });
+  expect(analysis).toMatchObject({ selectionMode: 'custom', selected: ['S0', 'S1', 'S2'], selectionFilter: 'page' });
 });
 it('shows an empty matching state without falling back to page images', async () => {
   const pageImages = results.filter(item => !item.candidate);
@@ -160,7 +160,7 @@ it.each([undefined, 'host-path-originals-v4'])('reanalyzes cached results from a
   expect(send.mock.calls.filter(([message]) => message.type === 'ANALYZE')).toEqual([[{ type: 'ANALYZE', tabId: 7 }]]);
   expect(analysis?.resolverVersion).toBe(ORIGINAL_RESOLVER_VERSION);
   expect(analysis?.job).toBe('fresh');
-  expectDownloadCount(3);
+  expectDownloadCount(0);
 });
 it('restores custom small-image selection and the display preference after reopening', async () => {
   analysis = { ...fixture(), selected: ['S1'], selectionMode: 'custom', selectionFilter: 'page' };
@@ -225,15 +225,15 @@ it('can cancel every selection even when the current search has no results', asy
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
   expectDownloadCount(0);
 });
-it('quickly selects small images, preserves the filter during manual choices and reports no matches', async () => {
+it('keeps explicit choices across modes and counts only the current mode', async () => {
   await mount();
   await chooseType('仅缩略图');
-  expect(analysis).toMatchObject({ selected: ['S0', 'S1', 'S2'], selectionFilter: 'page', selectionMode: 'page' });
+  expect(analysis).toMatchObject({ selected: ['L0', 'L1', 'L2'], selectionFilter: 'page', selectionMode: 'custom' });
   await click('#image-S0');
-  expect(analysis).toMatchObject({ selected: ['S1', 'S2'], selectionFilter: 'page', selectionMode: 'custom' });
+  expect(analysis).toMatchObject({ selected: ['L0', 'L1', 'L2', 'S0'], selectionFilter: 'page', selectionMode: 'custom' });
   await search('找不到的图像');
   expect(container.querySelector('.empty [data-slot=empty-title]')?.textContent).toBe('没有符合条件的图像');
-  expectDownloadCount(2);
+  expectDownloadCount(1);
   await click('.empty button');
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
 });
@@ -267,15 +267,15 @@ it('filters several formats without losing hidden selections and resets an empty
   expect(container.querySelectorAll('.format-filter[aria-pressed=true]')).toHaveLength(3);
   expectDownloadCount(0);
 });
-it('changing image type clears format restrictions and selects that type', async () => {
+it('changing image mode clears format restrictions without adding selections', async () => {
   await mount();
   await click('.format-filter[data-format=JPG]');
   expect(container.querySelectorAll('.image-item')).toHaveLength(0);
   await chooseType('全部（缩略图＋原图）');
-  expect(analysis).toMatchObject({ selected: ['S0', 'S1', 'S2'], selectionMode: 'page', selectionFilter: 'page' });
+  expect(analysis).toMatchObject({ selected: ['L0', 'L1', 'L2'], selectionMode: 'custom', selectionFilter: 'page' });
   expect(container.querySelector('.format-filter[data-format=JPG]')?.textContent).toBe('JPG(3)');
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
-  expectDownloadCount(3);
+  expectDownloadCount(0);
 });
 it('selects from card padding and toggles a label exactly once', async () => {
   await mount();
@@ -416,7 +416,7 @@ it('resumes a cancelled archive from the visible recovery controls', async () =>
   expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://images.example/*'] });
   expect(send).toHaveBeenCalledWith({ type: 'RESUME_ARCHIVE', batchId: 'cancelled' });
 });
-it('shows and selects all thumbnails when a new analysis has no originals', async () => {
+it('shows unselected page images when a new analysis has no originals', async () => {
   analysis = undefined;
   const thumbs = results.filter(item => !item.candidate);
   send.mockImplementation(async (message: Request) => {
@@ -427,7 +427,7 @@ it('shows and selects all thumbnails when a new analysis has no originals', asyn
   expect(send).toHaveBeenCalledWith({ type: 'ANALYZE', tabId: 7 });
   expect(container.querySelector('.original-mode-switch')?.getAttribute('aria-checked')).toBe('false');
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
-  expectDownloadCount(3);
+  expectDownloadCount(0);
 });
 it('disables duplicate extraction while showing busy text and then completion feedback', async () => {
   await mount();
@@ -769,12 +769,12 @@ it.each([
   analysis = undefined;
   send.mockImplementation((message: Request) => {
     if (message.type === 'RESUME_DOWNLOADS') return failure();
-    if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh' });
+    if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh', selected: [], selectionFilter: message.mode === 'large' ? 'large' : 'page' });
     return Promise.resolve({ ok: true });
   });
   await mount();
   expect(resumeCalls()).toHaveLength(1);
-  expectDownloadCount(3);
+  expectDownloadCount(0);
   expect(container.querySelector('.empty')).toBeNull();
   expect(container.textContent).not.toContain('恢复失败');
   expect(container.textContent).not.toContain('请在普通网页上');
@@ -814,4 +814,36 @@ it('closes extraction settings with Escape and preserves the saved summary', asy
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
   await click('.collection-options-trigger');
   expect(document.querySelector('[data-slot=combobox-content][data-open] [role=option]')?.getAttribute('aria-selected')).toBe('false');
+});
+
+it('ignores cached automatic selections but preserves explicit user choices', async () => {
+  analysis = { ...fixture(), selectionMode: 'large' };
+  await mount();
+  expectDownloadCount(0);
+  expect([...container.querySelectorAll('.item-checkbox')].every(box => box.getAttribute('aria-checked') === 'false')).toBe(true);
+  await click('#image-L1');
+  expect(analysis).toMatchObject({ selectionMode: 'custom', selected: ['L1'] });
+  await act(async () => root!.unmount()); root = undefined;
+  await mount();
+  expectDownloadCount(1);
+  expect(analysis!.selected).toEqual(['L1']);
+});
+it('keeps zero-selection bulk actions disabled while single-image download remains available', async () => {
+  analysis = { ...fixture(), selected: [] };
+  await mount();
+  expectDownloadCount(0);
+  for (const selector of ['.zip-button', '.copy-links-button', '.export-links-button']) expect(container.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
+  await click('.image-item .item-download');
+  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['L0'] });
+  expect(analysis!.selected).toEqual([]);
+});
+it('can clear choices hidden in another image mode without selecting that mode automatically', async () => {
+  await mount();
+  await click('.original-mode-switch');
+  expectDownloadCount(0);
+  expect(container.querySelector<HTMLButtonElement>('.deselect-all-button')?.disabled).toBe(false);
+  await click('.deselect-all-button');
+  expect(analysis!.selected).toEqual([]);
+  await click('.original-mode-switch');
+  expectDownloadCount(0);
 });

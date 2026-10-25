@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { defaultImageFilter, filterImageResults, selectBySize, updateVisibleSelection } from '../lib/selection';
-import type { ImageResult } from '../lib/types';
+import { analysisFilter, chosenAnalysisImages, defaultImageFilter, filterImageResults, selectBySize, updateVisibleSelection, userSelectedIds } from '../lib/selection';
+import type { AnalysisState, ImageResult } from '../lib/types';
 
 const results: ImageResult[] = [
   { id: 'a', label: '海岸线', candidate: true, url: 'https://images.example/SEA.JPG', source: '', reason: '', width: 0, height: 0 },
@@ -45,4 +45,19 @@ it('combines excluded formats with group, search', () => {
   expect(filterImageResults(mixed, 'small', '海岸', new Set(['SVG'])).map(item => item.id)).toEqual(['b']);
   expect(filterImageResults(mixed, 'all', '海岸', new Set(['SVG'])).map(item => item.id)).toEqual(['a', 'b']);
   expect(filterImageResults(mixed, 'all', '', new Set(['PNG', 'SVG']))).toEqual([]);
+});
+
+it('requires an explicit saved user selection and scopes selected images to the active mode', () => {
+  const state = { results, selected: ['a', 'b'], selectionMode: 'custom', selectionFilter: 'large' } as AnalysisState;
+  expect(chosenAnalysisImages(state).map(item => item.id)).toEqual(['a']);
+  expect(userSelectedIds(state)).toEqual(['a', 'b']);
+  expect(chosenAnalysisImages({ ...state, selectionFilter: 'page' }).map(item => item.id)).toEqual(['b']);
+  for (const selectionMode of [undefined, 'large', 'small', 'page', 'all'] as const) {
+    expect(chosenAnalysisImages({ ...state, selectionMode })).toEqual([]);
+  }
+  expect(analysisFilter(undefined)).toBe('page');
+  for (const selectionFilter of ['all', 'small'] as const) {
+    expect(analysisFilter({ ...state, selectionFilter })).toBe('page');
+    expect(chosenAnalysisImages({ ...state, selectionFilter }).map(item => item.id)).toEqual(['b']);
+  }
 });

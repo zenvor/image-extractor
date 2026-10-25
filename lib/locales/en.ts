@@ -1,5 +1,7 @@
 // Source-language keys keep extraction and UI messages in one catalog.
 export const en = {
+  "本地 HTML：{0}": "Local HTML: {0}",
+  "发现 {0} 张图像，已选 {1} 张": "Found {0} images, {1} selected",
   "ZIP 未保存。": "ZIP not saved.",
   "{0} 张待处理": "{0} pending",
   "正在生成 ZIP，文件尚未保存。": "Creating ZIP; not saved yet.",
@@ -259,7 +261,7 @@ export const en = {
   "提取失败": "Extraction failed",
   "未获得结果": "No results received",
   "已停止": "Stopped",
-  "提取完成。可打开网页检查，或按各页默认选择下载。": "Extraction finished. Open pages to check results, or download their default selections.",
+  "提取完成。请打开各页，通过插件勾选图像或全选，再返回这里下载。": "Extraction complete. Open each page, select images in the extension, then return here to download.",
   "{0}：请选择不超过 16 MB 的 HTML / HTM 文件。": "{0}: Choose an HTML / HTM file no larger than 16 MB.",
   "每次最多导入 20 个 HTML 文件，请减少文件数量。": "Import up to 20 HTML files at a time. Remove some files.",
   "请先选择 HTML 文件。": "Choose HTML files first.",

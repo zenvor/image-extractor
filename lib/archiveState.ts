@@ -123,7 +123,7 @@ export function requiredOrigins(urls: string[]): string[] {
     return `${url.protocol}//${url.hostname}/*`;
   }))];
 }
-export async function startArchive(results: ImageResult[], title: string, pageUrl: string, sourceTabId: number) {
+export async function startArchive(results: ImageResult[], title: string, pageUrl: string, sourceTabId: number, sourceUrl?: string) {
   const previous = archiveForPage(await readArchives(), sourceTabId, pageUrl);
   if (archiveActive(previous)) {
     let live = false;
@@ -144,7 +144,7 @@ export async function startArchive(results: ImageResult[], title: string, pageUr
   }
   const names = allocateImageNames(unique.map(item => ({ url: item.url, kind: item.candidate ? 'large' : 'small' })));
   const batch: ArchiveBatch = {
-    id: crypto.randomUUID(), title, pageUrl, sourceTabId, filename: archiveFilename(title, new URL(pageUrl).hostname),
+    id: crypto.randomUUID(), title, pageUrl, sourceTabId, sourceUrl, filename: archiveFilename(title, new URL(pageUrl).hostname),
     started: Date.now(), updated: Date.now(), status: 'queued', bytes: 0, message: '准备下载图像…',
     items: unique.map((item, index) => ({ id: item.id, url: item.url, kind: item.candidate ? 'large' : 'small', filename: names[index]!, status: 'pending' })),
   };
@@ -197,7 +197,7 @@ export async function retryArchive(id: string) {
     throw new Error('请允许下载权限和失败图像网站的访问权限。');
   }
   const batch: ArchiveBatch = {
-    id: crypto.randomUUID(), retryOf: source.id, title: source.title, pageUrl: source.pageUrl, sourceTabId: source.sourceTabId,
+    id: crypto.randomUUID(), retryOf: source.id, title: source.title, pageUrl: source.pageUrl, sourceTabId: source.sourceTabId, sourceUrl: source.sourceUrl,
     filename: archiveFilename(source.title, new URL(source.pageUrl).hostname).replace(/\.zip$/, '-失败图片.zip'),
     started: Math.max(Date.now(), source.started + 1), updated: Date.now(), status: 'queued', bytes: 0,
     message: `准备重试 ${failed.length} 张失败图像…`,

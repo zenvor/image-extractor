@@ -1,8 +1,17 @@
-# Image Extractor 0.6.5 — First public release candidate
+# Image Extractor 0.6.6 — First public release candidate
 
 Draft release notes. The package is prepared locally; this is not a published release. Full Chrome download acceptance is pending.
 
 Extract webpage images, resolve original URLs from supported thumbnails, and save selected images as ZIP archives.
+
+## Changes in 0.6.6
+
+- Extraction and HTML import start unselected. Users choose individual images or select all; switching original-matching mode preserves manual choices without adding selections.
+- Unchecked image controls remain visible, so individual selection is discoverable before hovering.
+- Cached automatic selections no longer count as user choices. Popup, batch tools and download validation use the same current-mode scope; single-image actions remain independent of bulk selection.
+- Batch results show found and selected counts separately, and explain where to choose images before downloading.
+- Imported HTML tasks retain source webpage metadata for display and retries without changing their workspace isolation key.
+- Real Chrome screenshots are included in both READMEs.
 
 ## Included
 
@@ -26,7 +35,9 @@ Original matching depends on supported URL patterns and does not verify original
 
 ## Validation
 
-All 373 tests in 21 files pass, including 41 scheduler tests, 76 popup tests, 15 shared-manager tests, and real loopback HTTP/disk-stream checks for continuous transfers, failed-only retry and cancellation recovery. Type checking, candidate production build and production-bundle checks pass. Manager tests cover five pages, independent controllers, shared page reuse, language changes, permission revocation, page unload, and stale snapshot updates.
+All 380 tests in 21 files pass, including real loopback HTTP/disk-stream checks for continuous transfers, failed-only retry and cancellation recovery. Type checking, candidate production build and production-bundle checks pass. Manager tests cover five pages, independent controllers, shared page reuse, language changes, permission revocation, page unload, and stale snapshot updates.
+
+Version 0.6.6 was synchronized and reloaded in Chrome with no active downloads. Real NASA-gallery acceptance verified zero initial selections, individual selection, selecting visible results, clearing selections hidden by a mode change, restoring manual choices and English after reopening, and clearing choices on re-extraction. English and Chinese screenshots are included in the READMEs. No new image download was started during this selection check.
 
 The brand-violet/amber theme, warning badges, compact row feedback and recovery-first actions were synchronized, reloaded and visually inspected in Chrome with 19 historical tasks and 0 active downloads. Historical partial tasks visibly retain proportional success/failure segments. Full outcome ratios, phase feedback and failure details are covered by simulated DOM tests. No new download was started for this visual check; real multi-page transfers, native saving and narrow-screen browser acceptance remain separate checks.
 

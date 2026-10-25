@@ -135,7 +135,7 @@ it('persists completed results independently of popup response delivery', async 
   handler({ type: 'ANALYZE', tabId: 1 }, { id: 'extension' }, () => {});
   await vi.waitFor(() => expect(saved['analysis:1']?.status).toBe('done'));
   expect(saved['analysis:1']!.results).toHaveLength(2);
-  expect(saved['analysis:1']!.selected).toEqual(['0', '1']);
+  expect(saved['analysis:1']!.selected).toEqual([]);
 });
 it('reads existing DOM immediately instead of waiting for images or page idle', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
@@ -145,10 +145,10 @@ it('reads existing DOM immediately instead of waiting for images or page idle', 
 it('applies the chosen size mode to new results instead of selecting both groups', async () => {
   execute.mockResolvedValue([{ result: { ...capture, images: [{ ...capture.images[0], source: 'https://t01.imx.to/t/forest.jpg', declared: [] }] } }]);
   await send({ type: 'ANALYZE', tabId: 1, mode: 'large' });
-  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'large', selected: ['0'] });
+  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'custom', selectionFilter: 'large', selected: [] });
   expect(saved['analysis:1']!.results.map(item => item.candidate)).toEqual([true, false]);
   await send({ type: 'ANALYZE', tabId: 1, mode: 'small' });
-  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'small', selected: ['1'] });
+  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'custom', selectionFilter: 'small', selected: [] });
 });
 it('times out stalled injection, allows retry and ignores a late response', async () => {
   vi.useFakeTimers();
@@ -211,18 +211,18 @@ it('does not resurrect results if navigation occurs during DOM reading', async (
 it('defaults to page images even when original rules match', async () => {
   execute.mockResolvedValue([{ result: { ...capture, images: [{ ...capture.images[0], source: 'https://image.imx.to/u/t/2026/09/26/765kix.jpg', declared: [] }] } }]);
   await send({ type: 'ANALYZE', tabId: 1 });
-  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'page', selectionFilter: 'page', selected: ['1'] });
+  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'custom', selectionFilter: 'page', selected: [] });
   expect(saved['analysis:1']!.results[0]!.url).toBe('https://i02.imx.to/i/2026/09/26/765kix.jpg');
 });
 it('defaults to page mode when no originals match', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
   expect(saved['analysis:1']!.results.every(item => !item.candidate)).toBe(true);
-  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'page', selectionFilter: 'page', selected: ['0', '1'] });
+  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'custom', selectionFilter: 'page', selected: [] });
 });
 it('keeps an explicit all-image choice even when originals are available', async () => {
   execute.mockResolvedValue([{ result: { ...capture, images: [{ ...capture.images[0], source: 'https://t01.imx.to/t/forest.jpg', declared: [] }] } }]);
   await send({ type: 'ANALYZE', tabId: 1, mode: 'all' });
-  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'all', selectionFilter: 'all', selected: ['0', '1'] });
+  expect(saved['analysis:1']).toMatchObject({ selectionMode: 'custom', selectionFilter: 'all', selected: [] });
 });
 
 it('keeps analysis and selections isolated when switching between pages and after worker restart', async () => {
@@ -258,6 +258,8 @@ it('keeps imported workspace results when the initial navigation finishes after 
   chrome.tabs.get = vi.fn(async (id: number) => ({ id, url } as chrome.tabs.Tab));
   expect(await send({ type: 'IMPORT_CAPTURE', capture })).toMatchObject({ ok: true });
   expect(saved['analysis:42']?.url).toBe(url);
+  expect(saved['analysis:42']?.sourceUrl).toBe(capture.url);
+  expect(saved['analysis:42']?.selected).toEqual([]);
   updated(42, { status: 'loading' });
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(saved['analysis:42']?.status).toBe('done');
@@ -283,7 +285,7 @@ it('does not let an in-flight old selection overwrite a newer analysis', async (
   release(); await selection;
   expect(await analysis).toMatchObject({ ok: true, analysis: { status: 'done' } });
   expect(saved['analysis:1']!.job).not.toBe(oldJob);
-  expect(saved['analysis:1']!.selected).toEqual(['0', '1']);
+  expect(saved['analysis:1']!.selected).toEqual([]);
 });
 it('does not resurrect an old selection after navigation clears its page', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
@@ -325,7 +327,7 @@ it('ignores an old selection received while a newer analysis is capturing', asyn
   expect(saved['analysis:1']!.status).toBe('running');
   release([{ result: capture }]); await analysis;
   expect(saved['analysis:1']!.job).not.toBe(oldJob);
-  expect(saved['analysis:1']!.selected).toEqual(['0', '1']);
+  expect(saved['analysis:1']!.selected).toEqual([]);
 });
 
 /* ---- E: SELECT reports every rejected request; F: selection filtering uses an id set ---- */
@@ -375,7 +377,7 @@ it('rejects an old selection that was queued behind a newer analysis and never o
   expect(await analysis).toMatchObject({ ok: true });
   expect(await queued).toMatchObject({ ok: false, message: expect.stringContaining('结果已变化') });
   expect(saved['analysis:1']!.job).not.toBe(oldJob);
-  expect(saved['analysis:1']!.selected).toEqual(['0', '1']);
+  expect(saved['analysis:1']!.selected).toEqual([]);
 });
 it('rejects a selection for a page that was cleared by navigation', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });

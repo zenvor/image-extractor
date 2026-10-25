@@ -32,6 +32,7 @@ function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
   const resumable = canResumeArchive(batch);
   const failures = batch.items.filter(item => item.status === 'failed');
   const firstFailure = failures[0]?.error;
+  const source = batch.sourceUrl || (batch.pageUrl.startsWith('chrome-extension:') ? t('本地 HTML：{0}', [batch.title]) : batch.pageUrl);
 
   useEffect(() => {
     if (owner === undefined || batch.tabId !== owner || !archiveActive(batch)) return;
@@ -67,7 +68,7 @@ function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
   return <TableRow role="row" aria-labelledby={`task-${batch.id}`} data-task-id={batch.id}>
     <TableCell role="cell" headers="tasks-source" className="task-identity">
       <h2 id={`task-${batch.id}`} className="task-row-title" title={batch.title || batch.filename}>{batch.title || batch.filename}</h2>
-      <p className="break-all text-xs text-muted-foreground" title={batch.pageUrl}>{batch.pageUrl}</p>
+      <p className="break-all text-xs text-muted-foreground" title={source}>{source}</p>
       <p className="mt-1 break-all text-xs text-muted-foreground">{batch.filename}</p>
       {batch.retryOf && <p className="text-xs text-muted-foreground">{t('补充下载任务')}</p>}
     </TableCell>
