@@ -54,7 +54,7 @@ https://i02.imx.to/i/<path>/<name>.jpg
 | 极高 | Extra High | 25 | 75 毫秒 | 75 毫秒 |
 | 超高 | Max | 30 | 50 毫秒 | 50 毫秒 |
 
-IMX、Vipr、Pixhost、Imagebam 和 Imgbox 的已知分片共用各自提供方额度，其他网站按 URL origin 区分。单个任务可在限制内使用空闲额度；增加标签页不会放大全局上限，也不保证平均分配。
+IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice 和 Postimages/Pixxxels 的已知分片共用各自提供方额度，包括 imagehaha.com、turboimg.net 等已声明的输出域名。其他网站按 URL origin 区分。单个任务可在限制内使用空闲额度；增加标签页不会放大全局上限，也不保证平均分配。
 
 HTTP 429/503 会触发来源共享冷却，遵守 Retry-After，恢复期间暂时降低来源并发。这限制的是请求压力，不是每秒下载字节数，不能保证网站不会限流；新高档位尚未全部经过真实图床验收。[参数和测试边界](download-policy.md)另有说明。
 
