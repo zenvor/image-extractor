@@ -27,6 +27,8 @@ Saved ZIPs with partial failures have a warning status; unsaved failures are red
 
 ## Original URL matching
 
+Some supported external image hosts require an optional detail-page lookup when original matching is enabled. Grant site access if prompted; completed lookups are saved without selecting images. See [forum host support](hosted-images.md) for supported formats, validation limits and references.
+
 Matching uses site-specific URL rules; it does not upscale images or perform reverse image search. For example:
 
 ```text
@@ -54,7 +56,7 @@ All tasks share a **hard limit of 30 in-flight image transfers**. Each source ha
 | Extra High | 25 | 75 ms | 75 ms |
 | Max | 30 | 50 ms | 50 ms |
 
-Known shards of IMX, Vipr, Pixhost, Imagebam, and Imgbox share a provider budget. Other hosts are separated by URL origin. A single task can use available capacity within these limits; capacity is not multiplied by opening more tabs, and equal sharing is not guaranteed.
+Known shards of IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages/Pixxxels each share their provider's budget, including declared output domains such as imagehaha.com and turboimg.net. Other hosts are separated by URL origin. A single task can use available capacity within these limits; capacity is not multiplied by opening more tabs, and equal sharing is not guaranteed.
 
 HTTP 429 / 503 responses trigger shared cooldown, honor `Retry-After`, and reduce per-source concurrency during recovery. These controls limit request pressure, not bytes per second, and cannot guarantee that a website will not throttle requests. Higher presets have not all been validated against real image hosts. See [download policy details and test scope](download-policy.md).
 

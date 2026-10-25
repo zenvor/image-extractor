@@ -6,7 +6,7 @@
 
 Preview and filter images from the current page, batches of URLs, or saved HTML files. All features are free, with no account required. The interface supports English and Simplified Chinese.
 
-Stable release: **[1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)**. Download the ready-to-load Chrome ZIP below; building from source is optional. The Chrome Web Store submission was last verified as **pending review** on October 25, 2026.
+Stable release: **[1.1.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)**. Download the ready-to-load Chrome ZIP below; building from source is optional. The Chrome Web Store submission was last verified as **pending review** on October 25, 2026.
 
 ![Image Extractor 1.0.0 in Chrome, with two images manually selected](docs/store-assets/screenshot-en.jpg)
 
@@ -26,13 +26,13 @@ Requires **Chrome 120+**.
 
 ### Download the release ZIP (recommended)
 
-1. Download [image-extractor-1.0.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip) from the [1.0.0 release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0). Choose this extension ZIP rather than GitHub's **Source code** archives.
+1. Download [image-extractor-1.1.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip) from the [1.1.0 release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0). Choose this extension ZIP rather than GitHub's **Source code** archives.
 2. Extract it to a folder you will keep on your computer.
 3. Open `chrome://extensions` and enable **Developer mode**.
 4. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
 5. Open a webpage and click the Image Extractor icon.
 
-No Node.js, npm or build step is needed. Keep the extracted folder in place while the extension is installed. A [SHA-256 checksum](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip.sha256) is available alongside the ZIP.
+No Node.js, npm or build step is needed. Keep the extracted folder in place while the extension is installed. A [SHA-256 checksum](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip.sha256) is available alongside the ZIP.
 
 ### Build from source (optional)
 
@@ -75,6 +75,14 @@ For batch URLs, HTML import, selection behavior and retry instructions, see the 
 Extraction and URL matching run locally, with no external extraction service or analytics. Previews and downloads contact the source websites and follow browser cookie policies. Preferences, task history and temporary download files are stored locally.
 
 The extension requires `activeTab`, `scripting` and `storage`; download and website-access permissions are requested when needed. See the [privacy policy](docs/privacy-policy.md) for data handling and retention.
+
+## Forum image hosts
+
+Version 1.1.0 adds image-detail lookup for **ViperGirls** pages (`vipergirls.to` and accessible mirrors), alongside the existing thumbnail rules. The target is the forum's documented image-host list intersected with gallery-dl support: **IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages / Pixxxels** (11 provider families).
+
+This is individual-image resolution on the loaded page, not automatic crawling of an entire thread. Some hosts require reading their image-detail pages after you grant optional site access. See [host formats, forum scope and validation limits](docs/hosted-images.md).
+
+This work references **[gallery-dl](https://github.com/mikf/gallery-dl)** for supported service behavior and URL/page formats, with an independent browser-side implementation. Upstream source files carry GPL-2.0 notices; no gallery-dl Python source is bundled or relabeled as MIT. [Reference details](docs/hosted-images.md#reference-and-attribution).
 
 ## Documentation and feedback
 

@@ -1,3 +1,6 @@
+import { noteDownloadResponse, withDownloadSlot } from '../../lib/downloadSpeed';
+import { hostedPageRequestUrl } from '../../lib/hostedImageHosts';
+import { resolveHostedPages } from '../../lib/resolveHostedPages';
 import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from '../../components/ui/input-group';
 import { Badge } from '../../components/ui/badge';
 import { Alert } from '../../components/ui/alert';
@@ -52,6 +55,8 @@ export default function App() {
   const [starting, setStarting] = useState(false);
   const [extracted, setExtracted] = useState(false);
   const extracting = useRef(false);
+  const hostedController = useRef<AbortController | undefined>(undefined);
+  const hostedJob = useRef('');
   const [archiveRecords, setArchiveRecords] = useState<Record<string, unknown>>(() => previewArchive ? { [ARCHIVE_KEY]: previewArchive } : {});
   const archive = archiveForPage(archivesFromStorage(archiveRecords), page.id, page.url);
   const [now, setNow] = useState(Date.now());
@@ -84,6 +89,10 @@ export default function App() {
     const match = value && value.resolverVersion === ORIGINAL_RESOLVER_VERSION && value.tabId === pageRef.current.id && value.url === pageRef.current.url ? value : undefined;
     // Late events from an older worker/page must not erase a newer result/error.
     if (value && !match) return;
+    if (hostedController.current && match?.job !== hostedJob.current) {
+      hostedController.current.abort(); hostedController.current = undefined;
+      setBusy(false);
+    }
     setState(match);
     if (!saving.current || !match || match.status !== 'done') {
       setSelected(userSelectedIds(match));
@@ -92,6 +101,7 @@ export default function App() {
   }
 
   async function performAnalysis(tabId: number, scroll = false) {
+    hostedController.current?.abort();
     extracting.current = true; setExtracted(false);
     setBusy(true); setFeedback(''); setPreviewItem(undefined);
     try {
@@ -169,6 +179,7 @@ export default function App() {
     initialize().catch(console.error);
     return () => {
       mounted = false;
+      hostedController.current?.abort();
       if (!preview && typeof chrome !== 'undefined') chrome.storage?.onChanged.removeListener(changed);
     };
   }, []);
@@ -216,8 +227,44 @@ export default function App() {
   }
   function chooseOriginalMode(enabled: boolean) {
     const scope: ImageFilter = enabled ? 'large' : 'page';
+    const matchedSources = new Set(state?.results.filter(item => item.candidate).map(item => item.source));
+    const targets = enabled && !preview ? (state?.hostedPages || []).filter(page => !matchedSources.has(page.source)) : [];
+    // Keep permission acquisition in the original click stack, ahead of persistence or network work.
+    let permission: Promise<boolean> | undefined;
+    try { permission = targets.length ? chrome.permissions.request({ origins: requiredOrigins(targets.map(page => hostedPageRequestUrl(page.url))) }) : undefined; }
+    catch (error) { setFeedback(error instanceof Error ? error.message : t('图床解析失败，请重试。')); return; }
     setFilter(scope); setExcludedFormats(new Set());
     select(selected, 'custom', scope);
+    if (!permission || !state) return;
+    const job = state.job;
+    const controller = new AbortController();
+    hostedController.current?.abort(); hostedController.current = controller; hostedJob.current = job;
+    setBusy(true); setFeedback(t('正在解析图床原图…'));
+    void (async () => {
+      try {
+        if (!(await permission)) throw new Error(t('未获得图床访问权限，已保留现有匹配结果。'));
+        controller.signal.throwIfAborted();
+        const outcome = await resolveHostedPages(targets, controller.signal, async (page, url) => {
+          controller.signal.throwIfAborted();
+          const response = await chrome.runtime.sendMessage({ type: 'HOSTED_ORIGINAL', job, pageUrl: page.url, url } satisfies Request);
+          if (!response?.ok) throw new Error(response?.message || t('图床结果保存失败。'));
+          if (!controller.signal.aborted) restore(response.analysis);
+        }, async (input, init) => {
+          const response = await fetch(input, init);
+          try { await noteDownloadResponse(String(input), response); }
+          catch (error) { await response.body?.cancel(); throw error; }
+          return response;
+        }, (url, signal, lookup) => withDownloadSlot(url, signal, lookup, undefined, job));
+        if (!controller.signal.aborted) setFeedback(t('图床解析完成：成功 {0}，失败 {1}。', [outcome.resolved, outcome.failed]));
+      } catch (error) {
+        if (!controller.signal.aborted) setFeedback(error instanceof Error ? error.message : t('图床解析失败，请重试。'));
+      } finally {
+        if (hostedController.current === controller) {
+          hostedController.current = undefined;
+          if (!controller.signal.aborted) setBusy(false);
+        }
+      }
+    })();
   }
   function toggleFormat(format: ImageFormat) {
     setExcludedFormats(current => {

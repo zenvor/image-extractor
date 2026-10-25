@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-25. Candidate version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
+Last updated: 2026-10-26. Source/GitHub release version: 1.1.0. Submitted store version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
 
 ## Store listing
 
@@ -100,6 +100,7 @@ Planned distribution: free, public. Confirm country/region settings in dashboard
 
 | Version | Date | Changes | Status |
 | --- | --- | --- | --- |
+| 1.1.0 | 2026-10-26 | Eleven image-host provider families for forum original lookup; optional detail access, cancellation and shared budgets | GitHub 1.1.0; not submitted to Chrome Web Store |
 | 1.0.0 | 2026-10-25 | First stable release; free extraction, supported original matching and ZIP downloads | Pending review; auto-publish enabled |
 
 ## Local package validation
@@ -125,3 +126,11 @@ Submitted on 2026-10-25 (Asia/Taipei). Dashboard status: Pending review. Automat
 Dashboard: https://chrome.google.com/webstore/devconsole/82288fad-14d3-4394-9d40-822576edd142/ndeaeajbbikgkghamnlmckbiocdfmonp/edit/status
 
 Store item ID: ndeaeajbbikgkghamnlmckbiocdfmonp. Submission screenshot retained locally under .output-staged/store-assets/submission-confirmed.jpg. No scheduled monitoring created.
+
+## Version 1.1.0: forum image-detail lookup (2026-10-26)
+
+Version 1.1.0 resolves individual external image-detail links on ViperGirls pages and accessible mirrors for eleven provider families; see docs/hosted-images.md. Optional access to the relevant image-host origins is requested when original matching is enabled. Detail-page HTML is read locally to locate image URLs; remote scripts are not executed. Original discovery therefore may contact a selected source image host before preview or download. There is no new developer endpoint, analytics, login service or manufactured verification cookie. Manifest permissions are unchanged.
+
+The submitted 1.0.0 store artifact does not include this change. GitHub publication of 1.1.0 does not submit or approve a Chrome Web Store update. The public policy linked from the store must be synchronized before a 1.1.0 store submission.
+
+1.1.0 candidate validation (2026-10-26): all 428 tests in 22 files, type checking, isolated build, production-bundle checks and 35-file ZIP integrity passed. Built manifest version: 1.1.0. Existing installed extension was not reloaded; provider-specific live verification limits are documented in docs/hosted-images.md.

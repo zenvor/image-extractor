@@ -477,3 +477,27 @@ it('preserves saved opt-outs when extracting a page', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
   expect(execute.mock.calls[0]![0].args).toEqual([{ css: false, icons: false, inline: true }]);
 });
+it('stores recognized detail pages and only appends provider-scoped originals to the current job', async () => {
+  const pageUrl = 'https://www.imagebam.com/view/MABC123';
+  const source = 'https://thumbs.imagebam.com/sample.jpg';
+  execute.mockResolvedValue([{ result: { ...capture, images: [{ ...capture.images[0], source, declared: [], link: pageUrl }] } }]);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const state = saved['analysis:1']!;
+  expect(state.hostedPages).toEqual([{ url: pageUrl, source, label: 'Landscape' }]);
+  state.selected = ['0'];
+  const job = state.job;
+  const url = 'https://images4.imagebam.com/test.jpg';
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl, url: 'https://evil.test/test.jpg' })).toMatchObject({ ok: false });
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl: 'https://www.imagebam.com/view/MOTHER', url })).toMatchObject({ ok: false });
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl, url })).toMatchObject({ ok: false, message: '图床访问权限已失效。' });
+  expect(saved['analysis:1']?.results).toHaveLength(1);
+  permissionContains.mockResolvedValue(true);
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl, url })).toMatchObject({ ok: true });
+  expect(saved['analysis:1']?.results.at(-1)).toMatchObject({ url, source, candidate: true, pageImage: false });
+  expect(saved['analysis:1']?.selected).toEqual(['0']);
+  expect(saved['analysis:1']?.hostedPages).toEqual([]);
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl, url })).toMatchObject({ ok: false });
+  await send({ type: 'ANALYZE', tabId: 1 });
+  expect(await send({ type: 'HOSTED_ORIGINAL', job, pageUrl, url })).toMatchObject({ ok: false });
+  expect(saved['analysis:1']?.results).toHaveLength(1);
+});

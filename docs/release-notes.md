@@ -1,3 +1,17 @@
+# Image Extractor 1.1.0 — Forum image-host originals
+
+Version 1.1.0 adds original-image lookup from supported image-host detail pages linked on ViperGirls and accessible mirrors. Coverage follows the intersection of the forum’s documented hosts and gallery-dl support: IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages/Pixxxels (11 provider families).
+
+Enable original matching and grant optional access to the relevant image hosts when prompted. Successful lookups are saved without automatically selecting images. Closing the popup or starting a new extraction cancels remaining lookups. Detail reads share request budgets and server cooldown with downloads.
+
+This resolves individual images on the loaded page; it does not automatically crawl a whole thread. Some live sample hosts returned expired pages, HTTP 403 or timeouts. See [host coverage and verification boundaries](hosted-images.md), including gallery-dl attribution and implementation details.
+
+Validation: all 428 tests in 22 files, TypeScript, an isolated production build and production-bundle checks passed for the feature implementation. Chrome parser fixtures passed 12/12. Saved live HTML yielded original URLs for Vipr, Pixhost and ImageTwist; this is not full image-download acceptance for every provider. The installed extension was not reloaded. The 1.1.0 rebuild repeated all 428 tests successfully. Packaging verified 35 files, ZIP integrity and manifest version 1.1.0; local candidate SHA-256: `d0d8b50e69e96a3b4060f91826ec72eb71c11b07e36c5c8a2f9133f7c51dc361`. Release workflow artifacts may differ by build environment and carry their own checksum.
+
+The Chrome Web Store’s previously submitted package is 1.0.0; publishing this GitHub release does not change that submission.
+
+---
+
 # Image Extractor 1.0.0 — First stable release
 
 [GitHub Release 1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0) is published with the Chrome extension ZIP and SHA-256 checksum. The Chrome Web Store submission was last verified as pending review on 2026-10-25, with automatic publication after approval enabled. Core Chrome download, failed-only retry, cancellation/recovery and two-page isolation smoke checks passed; five-page simultaneous transfers and narrow-screen manual checks remain unverified.

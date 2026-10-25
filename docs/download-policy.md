@@ -1,6 +1,6 @@
 # Download policies
 
-Current source version: 1.0.0. Download policies control concurrent image transfers and how frequently new requests may start. They do not set a bandwidth limit or guarantee that a website will accept requests.
+Current source version: 1.1.0. Download policies control concurrent image transfers and how frequently new requests may start. They do not set a bandwidth limit or guarantee that a website will accept requests.
 
 ## Shared limits
 
@@ -14,7 +14,7 @@ Current source version: 1.0.0. Download policies control concurrent image transf
 
 The global limit applies across all task pages. A transfer holds its slot until its response has been written to temporary storage, rather than releasing it when response headers arrive. Batch downloads, single-image ZIPs, failed-only retries, and recovery use the same scheduler; embedded data images do not consume network slots.
 
-Known shards of IMX, Vipr, Pixhost, Imagebam, and Imgbox share one budget per provider. Other URLs are grouped by origin. Opening more tabs does not multiply the limits. A single task can use available capacity up to the configured source/global limits, but scheduling does not guarantee equal shares between tasks.
+Known shards of IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages/Pixxxels each share one budget per provider, including declared output domains such as imagehaha.com and turboimg.net. Other URLs are grouped by origin. Opening more tabs does not multiply the limits. A single task can use available capacity up to the configured source/global limits, but scheduling does not guarantee equal shares between tasks.
 
 The start intervals are measured from actual transfer invocation. Admission and storage delays must not cause queued requests to start together. Completed or cancelled transfers release their concurrency slots without waiting for the remaining pacing interval. A source waiting for cooldown does not hold up unrelated sources.
 
@@ -24,7 +24,7 @@ HTTP 429 means too many requests; HTTP 503 means temporary unavailability and ma
 
 1. A first 429 response pauses its source for at least 60 seconds; a first 503 response pauses it for at least 30 seconds. Longer server-provided delays take precedence.
 2. Repeated incidents increase the extension's cooldown up to 15 minutes. A longer server-provided delay is not shortened. Responses arriving during one cooldown are grouped as one incident.
-3. During recovery, the affected source is restricted to one transfer at a time. Its start interval increases with the penalty, up to 30 seconds. Every eight successful, format-validated image transfers reduces the penalty by one level.
+3. During recovery, the affected source is restricted to one transfer at a time. Its start interval increases with the penalty, up to 30 seconds. Every eight successful responses reduces the penalty by one level; image downloads are counted after format validation, and detail lookups after an HTTP success.
 4. A redirected response also applies cooldown to its final source. Users can still cancel waiting tasks; other sources can continue.
 
 All five policies retain this behavior. A 503 response alone does not prove an IP ban. The limits are project choices, not capacities specified by HTTP standards or guarantees from image hosts.

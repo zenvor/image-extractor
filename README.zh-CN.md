@@ -6,7 +6,7 @@
 
 支持当前网页、批量网址和本地 HTML 文件，提供图像预览、筛选和链接导出。全部功能免费，无需账号，界面支持简体中文与英文。
 
-正式版 **[1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)** 已发布，可直接下载下方 Chrome ZIP 安装包，源码构建为可选方式。Chrome 商店于 2026 年 10 月 25 日提交，最后核验状态为**审核中**。
+正式版 **[1.1.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)** 已发布，可直接下载下方 Chrome ZIP 安装包，源码构建为可选方式。Chrome 商店于 2026 年 10 月 25 日提交，最后核验状态为**审核中**。
 
 ![Chrome 中的 Image Extractor 1.0.0，新结果默认未勾选](docs/store-assets/screenshot-zh.jpg)
 
@@ -26,13 +26,13 @@ Chrome 实机截图。图像来源：NASA 的 [Artemis II Lunar Flyby 图集](ht
 
 ### 下载正式版 ZIP（推荐）
 
-1. 从 [1.0.0 发布页](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)下载 [image-extractor-1.0.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip)。请选择该扩展安装包，而不是 GitHub 自动提供的 **Source code** 源码压缩包。
+1. 从 [1.1.0 发布页](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)下载 [image-extractor-1.1.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip)。请选择该扩展安装包，而不是 GitHub 自动提供的 **Source code** 源码压缩包。
 2. 解压到电脑上准备长期保留的目录。
 3. 打开 `chrome://extensions`，开启「开发者模式」。
 4. 点击「加载已解压的扩展程序」，选择解压后包含 `manifest.json` 的目录。
 5. 打开一个网页，点击 Image Extractor 图标。
 
-无需安装 Node.js、运行 npm 或自行构建。扩展安装期间请保留解压目录。发布页同时提供 [SHA-256 校验文件](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip.sha256)。
+无需安装 Node.js、运行 npm 或自行构建。扩展安装期间请保留解压目录。发布页同时提供 [SHA-256 校验文件](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip.sha256)。
 
 ### 从源码构建（可选）
 
@@ -75,6 +75,14 @@ npm run build
 提取和地址匹配在本地执行，不依赖外部提取服务，也没有集成统计分析。预览和下载会访问源网站，并遵循浏览器的 Cookie 策略。偏好设置、任务历史和临时下载文件保存在本地。
 
 默认权限为 `activeTab`、`scripting` 和 `storage`；下载与网站访问权限按需申请。数据处理和保留规则见[隐私政策](docs/privacy-policy.md)。
+
+## 论坛图床解析
+
+1.1.0 为 **ViperGirls** 页面（`vipergirls.to` 及可访问的镜像）补充了图床详情页解析，并保留现有缩略图规则。范围取自论坛公布的图床清单与 gallery-dl 支持范围的交集：**IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice、Postimages / Pixxxels**，共 11 类解析器。
+
+解析针对已加载页面中的单张图片链接，不会自动遍历整个帖子。部分图床需要在你授予可选网站权限后读取图片详情页。具体地址格式、论坛范围和验证边界见[图床支持说明](docs/hosted-images.md)。
+
+感谢 **[gallery-dl](https://github.com/mikf/gallery-dl)** 提供站点解析参考。本功能参考其支持范围和公开地址、页面格式，在浏览器端独立实现；上游相关源码采用 GPL-2.0，本项目未打包其 Python 源码，也未将其源码改标为 MIT。[参考来源说明](docs/hosted-images.md#reference-and-attribution)。
 
 ## 文档与反馈
 

@@ -1,5 +1,22 @@
 // Source-language keys keep extraction and UI messages in one catalog.
 export const en = {
+  '不支持的图床详情页。': 'Unsupported image-host detail page.',
+  '图床未返回可解析的页面。': 'The image host did not return a supported HTML page.',
+  '图床页面超过读取上限。': 'The image-host page exceeds the read limit.',
+  '图床页面请求超时。': 'The image-host page request timed out.',
+  '未找到图床原图，请在网站完成验证后重试。': 'No original image was found. Complete any website verification and try again.',
+  '图像地址已达读取上限。': 'The image URL read limit has been reached.',
+
+  '正在解析图床原图…': 'Resolving original images from image hosts…',
+  '未获得图床访问权限，已保留现有匹配结果。': 'Image-host access was not granted. Existing matches are preserved.',
+  '图床结果保存失败。': 'Could not save the image-host results.',
+  '图床解析完成：成功 {0}，失败 {1}。': 'Image-host resolution finished: {0} succeeded, {1} failed.',
+  '图床解析失败，请重试。': 'Image-host resolution failed. Please try again.',
+  '结果已变化，请重新提取图像。': 'The results have changed. Extract the images again.',
+  '图床原图地址无效。': 'Invalid original image URL from the image host.',
+  '图床访问权限已失效。': 'Image-host access permission is no longer available.',
+  '大图 · 图床详情页': 'Original · Image-host page',
+
   "本地 HTML：{0}": "Local HTML: {0}",
   "发现 {0} 张图像，已选 {1} 张": "Found {0} images, {1} selected",
   "ZIP 未保存。": "ZIP not saved.",
