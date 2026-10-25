@@ -1,42 +1,46 @@
-# Image Extractor
+<p align="center">
+  <img src="public/icons/128.png" width="96" alt="Image Extractor icon">
+</p>
 
-**English** | [简体中文](README.zh-CN.md)
+<h1 align="center">Image Extractor</h1>
 
-**Extract images from webpages, match supported thumbnail URLs to originals, and download your selection as a ZIP.**
+<p align="center">A Chrome extension to extract webpage images, find supported originals and download your selection.</p>
 
-Preview and filter images from the current page, batches of URLs, or saved HTML files. All features are free, with no account required. The interface supports English and Simplified Chinese.
+<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 
-Stable release: **[1.1.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)**. Download the ready-to-load Chrome ZIP below; building from source is optional. The Chrome Web Store submission was last verified as **pending review** on October 25, 2026.
+<p align="center">
+  <a href="https://github.com/zenvor/image-extractor-extension/releases/latest">Download</a> ·
+  <a href="docs/usage.md">User guide</a> ·
+  <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
+</p>
 
-![Image Extractor 1.0.0 in Chrome, with two images manually selected](docs/store-assets/screenshot-en.jpg)
-
-Real Chrome capture. Imagery: NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). No NASA affiliation or endorsement is implied. [Screenshot preparation](docs/store-assets/README.md).
+![Image preview, filters and manual selection in Chrome](docs/store-assets/screenshot-en.jpg)
 
 ## Features
 
-- **Find and filter images.** Collect ordinary and lazy-loaded images, with optional icons, CSS backgrounds and embedded images. Preview results in a grid or list and filter by format or text.
-- **Match supported originals.** Convert supported thumbnail URL patterns on IMX, Imgbox, Pixhost, Vipr, Duitang and other image hosts. Ordinary page-image extraction also works without an original-matching rule.
-- **Process multiple sources.** Extract from the current webpage, up to 20 webpage URLs, or up to 20 local HTML files per batch.
-- **Download and recover.** Save selected images as numbered files in a ZIP. View tasks in one download manager, retry failed images separately, or recover interrupted tasks when valid cached files are available. Five download policies control request pressure.
-- **Export links.** Copy selected image URLs or save them as a TXT list.
+- **Browse before downloading.** Preview page images in a grid or list, search and filter by format, then choose what to save.
+- **Find supported originals.** Resolve thumbnail addresses and image-host detail links, including images linked from ViperGirls posts and images on Duitang.
+- **Work across sources.** Extract from the current page, a batch of webpage URLs, or saved HTML files. Optional sources include CSS backgrounds, icons and embedded images.
+- **Keep downloads organized.** Save numbered images in ZIP archives and manage downloads from several pages together. Retry failed images or resume interrupted tasks when cached files are available.
+- **Use the links elsewhere.** Copy selected image URLs or export them as a TXT list.
 
-## Install
+Free and open source. No account required. English and Simplified Chinese interfaces.
 
-Requires **Chrome 120+**.
+## Installation
 
-### Download the release ZIP (recommended)
+Requires **Chrome 120 or newer**.
 
-1. Download [image-extractor-1.1.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip) from the [1.1.0 release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0). Choose this extension ZIP rather than GitHub's **Source code** archives.
-2. Extract it to a folder you will keep on your computer.
-3. Open `chrome://extensions` and enable **Developer mode**.
-4. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
-5. Open a webpage and click the Image Extractor icon.
+1. Open the **[latest release](https://github.com/zenvor/image-extractor-extension/releases/latest)** and download the `image-extractor-*-chrome.zip` package under **Assets**. The **Source code** archives are for developers.
+2. Extract the ZIP to a folder you will keep on your computer.
+3. Open `chrome://extensions`, enable **Developer mode**, and select **Load unpacked**.
+4. Choose the extracted folder containing `manifest.json`, then open a webpage and click the extension icon.
 
-No Node.js, npm or build step is needed. Keep the extracted folder in place while the extension is installed. A [SHA-256 checksum](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip.sha256) is available alongside the ZIP.
+The release includes a SHA-256 checksum alongside the ZIP. Finish active downloads before updating or reloading an installed copy.
 
-### Build from source (optional)
+<details>
+<summary>Build from source</summary>
 
-You need **Chrome 120+**, **Git**, and **Node.js 22.12+** (or a newer supported LTS release).
+Requires Git and Node.js 22.12+ or a newer supported LTS release.
 
 ```sh
 git clone https://github.com/zenvor/image-extractor-extension.git
@@ -45,66 +49,45 @@ npm ci
 npm run build
 ```
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Select **Load unpacked** and choose the project's `.output/chrome-mv3` directory.
-3. Open a webpage and click the Image Extractor icon.
+Load `.output/chrome-mv3` through **Load unpacked**. For development, use `npm install`; see the [development guide](docs/development.md).
 
-This source-installation path uses `npm ci` to reproduce the committed dependency versions without changing `package-lock.json`. For everyday development, use `npm install`; see the [development guide](docs/development.md#dependency-installation).
+</details>
 
-Load the built directory rather than the source directory. Finish active downloads before rebuilding or reloading an installed extension.
+## Getting started
 
-## Quick start
+1. Open an image page and load the content you want to save.
+2. Open Image Extractor. Filter the results and select images individually or with **Select all**. Results start unselected.
+3. Enable **Match original images** for supported sites; grant image-host access if prompted.
+4. Choose **Download selected**, then follow progress in **Download task**. Keep the download manager open until tasks finish.
 
-1. Open a page containing images and load the content you want to save.
-2. Click the extension icon. New pages are analyzed automatically; use **Extract images** to refresh the results.
-3. Filter the results and select images individually or with **Select all**. New extraction results start unselected. Enable **Match original images** if you want supported URL matches.
-4. Select **Download selected** and grant download or site permissions when prompted. The default download policy is **Medium**.
-5. Follow progress in **Download task**. You can close the popup, but keep the download manager open until the tasks finish.
+For batch URLs, HTML import, selection rules and recovery, see the [user guide](docs/usage.md).
 
-**Filtering preserves hidden selections.** Select all chooses visible results; Deselect all clears every selection in the current mode. Downloads, copying and TXT export use the current mode's selected images.
+## Supported originals
 
-For batch URLs, HTML import, selection behavior and retry instructions, see the [usage guide](docs/usage.md).
+- **Forum pages:** ViperGirls (`vipergirls.to`) and accessible mirrors, including `viperproxy.org`.
+- **External image hosts:** IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages / Pixxxels.
+- **Other URL rules:** Duitang and additional supported thumbnail formats; see the [original-matching guide](docs/usage.md#original-url-matching).
 
-## Limits and privacy
+Forum support resolves linked images on the loaded page; it does not crawl every page of a thread. Supported URL formats, aliases and live-verification limits are documented in the [image-host guide](docs/hosted-images.md). Website changes, authentication and rate limits can affect results.
 
-- Original matching uses site-specific URL rules. It does not verify resolution or guarantee a downloadable original. Website changes, authentication and throttling can affect extraction and downloads; the extension does not bypass verification.
-- Cross-origin frames, closed shadow roots and content that has not loaded may be inaccessible. Imported HTML cannot reproduce script-generated content.
-- Closing the download manager interrupts active tasks. Recovery reuses complete cached files where available; browser storage limits and the 24-hour cache retention window mean recovery is not guaranteed.
-- Each ZIP supports up to **2,000 images**, **128 MB per image** and **4 GB of image data**. HTML imports support up to **20 files**, **16 MB each**.
+## Privacy
 
-Extraction and URL matching run locally, with no external extraction service or analytics. Previews and downloads contact the source websites and follow browser cookie policies. Preferences, task history and temporary download files are stored locally.
+Processing and task storage stay on your device. Original-image lookup, previews and downloads contact the relevant source websites. There is no analytics or developer-operated extraction service. Website and download permissions are requested when needed. See the [privacy policy](docs/privacy-policy.md).
 
-The extension requires `activeTab`, `scripting` and `storage`; download and website-access permissions are requested when needed. See the [privacy policy](docs/privacy-policy.md) for data handling and retention.
+## Documentation and contributing
 
-## Forum image hosts
+- [User guide](docs/usage.md) — selection, batch processing, ZIP downloads and recovery.
+- [Download policies](docs/download-policy.md) — shared request limits and server cooldown.
+- [Development](docs/development.md) — setup, checks and source layout.
+- [Publishing releases](docs/releasing.md) — versioning and automated release assets.
 
-Version 1.1.0 adds image-detail lookup for **ViperGirls** pages (`vipergirls.to` and accessible mirrors), alongside the existing thumbnail rules. The target is the forum's documented image-host list intersected with gallery-dl support: **IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages / Pixxxels** (11 provider families).
+Issues and pull requests are welcome. For a bug report, include a public example URL when possible, steps to reproduce, and your extension version. Remove private links and cookies before sharing logs.
 
-This is individual-image resolution on the loaded page, not automatic crawling of an entire thread. Some hosts require reading their image-detail pages after you grant optional site access. See [host formats, forum scope and validation limits](docs/hosted-images.md).
+## Acknowledgements
 
-This work references **[gallery-dl](https://github.com/mikf/gallery-dl)** for supported service behavior and URL/page formats, with an independent browser-side implementation. Upstream source files carry GPL-2.0 notices; no gallery-dl Python source is bundled or relabeled as MIT. [Reference details](docs/hosted-images.md#reference-and-attribution).
-
-## Documentation and feedback
-
-- [Usage guide](docs/usage.md): selection, batches, ZIP output, retries and recovery.
-- [Download policies](docs/download-policy.md): request limits and throttling behavior.
-- [Release notes](docs/release-notes.md).
-- [Report a problem](https://github.com/zenvor/image-extractor-extension/issues): include the extension version, steps to reproduce, expected and actual behavior, and a public page URL when possible. Remove private URLs, cookies and other sensitive data before sharing logs or screenshots.
-
-## Development
-
-Built with React, TypeScript, WXT, Tailwind CSS and shadcn/ui.
-
-```sh
-npm install
-npm run typecheck
-npm test -- --maxWorkers=1
-npm run build
-npm run check:bundle
-```
-
-See the [development guide](docs/development.md) for test requirements, isolated builds and source layout, and [release instructions](docs/releasing.md) for manually authored GitHub Releases and automatic build attachments.
+- [gallery-dl](https://github.com/mikf/gallery-dl) informed the image-host support through its public URL and page formats. See [reference and attribution details](docs/hosted-images.md#reference-and-attribution).
+- Preview imagery comes from NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). [Image credits and screenshot details](docs/store-assets/README.md).
 
 ## License
 
-[MIT](LICENSE), Copyright (c) 2026 Image Extractor contributors. Dependencies retain their own licenses. Built packages include `THIRD_PARTY_LICENSES.md` and `THIRD_PARTY_NOTICES.md`; copied shadcn/ui source also includes its MIT license in `components/ui/LICENSE.md`.
+[MIT](LICENSE). Third-party components retain their own licenses; release packages include their notices.

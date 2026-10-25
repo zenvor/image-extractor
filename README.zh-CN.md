@@ -1,42 +1,46 @@
-# Image Extractor
+<p align="center">
+  <img src="public/icons/128.png" width="96" alt="Image Extractor 图标">
+</p>
 
-[English](README.md) | **简体中文**
+<h1 align="center">Image Extractor</h1>
 
-**从网页提取图像，按已适配规则匹配原图地址，将所选图片打包为 ZIP。**
+<p align="center">提取网页图片、匹配原图并批量下载的 Chrome 扩展。</p>
 
-支持当前网页、批量网址和本地 HTML 文件，提供图像预览、筛选和链接导出。全部功能免费，无需账号，界面支持简体中文与英文。
+<p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 
-正式版 **[1.1.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)** 已发布，可直接下载下方 Chrome ZIP 安装包，源码构建为可选方式。Chrome 商店于 2026 年 10 月 25 日提交，最后核验状态为**审核中**。
+<p align="center">
+  <a href="https://github.com/zenvor/image-extractor-extension/releases/latest">下载扩展</a> ·
+  <a href="docs/usage.zh-CN.md">使用说明</a> ·
+  <a href="https://github.com/zenvor/image-extractor-extension/issues">反馈问题</a>
+</p>
 
-![Chrome 中的 Image Extractor 1.0.0，新结果默认未勾选](docs/store-assets/screenshot-zh.jpg)
+![Chrome 中的图片预览、筛选和手动选图界面](docs/store-assets/screenshot-zh.jpg)
 
-Chrome 实机截图。图像来源：NASA 的 [Artemis II Lunar Flyby 图集](https://www.nasa.gov/gallery/lunar-flyby/)，不表示 NASA 与本项目有关联或为本项目背书。[截图处理说明](docs/store-assets/README.md)。
+## 功能
 
-## 主要功能
+- **先预览，再下载：** 网格或列表浏览图片，按格式与文字筛选，选择需要保存的内容。
+- **匹配原图：** 解析已支持的缩略图地址和图床详情链接，适用于 ViperGirls 帖子中的图片、堆糖作品图等场景。
+- **处理多种来源：** 支持当前网页、批量网址和本地 HTML 文件，可选采集 CSS 背景、图标及内嵌图片。
+- **统一管理下载：** 图片按顺序编号并打包为 ZIP，在同一任务页管理多个网页的下载；支持仅重试失败图片，以及在有效缓存可用时恢复中断任务。
+- **导出图片链接：** 复制所选图片网址，或保存为 TXT 清单。
 
-- **提取与筛选图像：** 收集普通图像和懒加载图像，可选采集图标、CSS 背景及内嵌图像；支持网格或列表预览，以及格式和文字筛选。
-- **匹配已适配的原图地址：** 支持 IMX、Imgbox、Pixhost、Vipr、堆糖等图床的部分缩略图地址规则；没有匹配规则的网页也可使用普通图像提取。
-- **处理多种来源：** 支持当前网页、每批最多 20 个网页网址或 20 个本地 HTML 文件。
-- **下载与恢复：** 将所选图片按顺序编号并保存为 ZIP，在统一任务页查看进度；可单独重试失败图片，或在有效缓存可用时恢复中断任务。五档下载策略用于调节请求压力。
-- **导出链接：** 复制所选图像网址，或保存为 TXT 链接清单。
+免费开源，无需账号。界面支持简体中文与英文。
 
 ## 安装
 
-需要 **Chrome 120+**。
+需要 **Chrome 120 或更新版本**。
 
-### 下载正式版 ZIP（推荐）
+1. 打开 **[最新发布页](https://github.com/zenvor/image-extractor-extension/releases/latest)**，在 **Assets** 中下载 `image-extractor-*-chrome.zip` 安装包。**Source code** 是供开发者使用的源码压缩包。
+2. 解压到电脑上准备长期保留的文件夹。
+3. 打开 `chrome://extensions`，开启「开发者模式」，点击「加载已解压的扩展程序」。
+4. 选择解压后包含 `manifest.json` 的文件夹，打开网页并点击扩展图标。
 
-1. 从 [1.1.0 发布页](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.1.0)下载 [image-extractor-1.1.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip)。请选择该扩展安装包，而不是 GitHub 自动提供的 **Source code** 源码压缩包。
-2. 解压到电脑上准备长期保留的目录。
-3. 打开 `chrome://extensions`，开启「开发者模式」。
-4. 点击「加载已解压的扩展程序」，选择解压后包含 `manifest.json` 的目录。
-5. 打开一个网页，点击 Image Extractor 图标。
+发布页提供对应的 SHA-256 校验文件。更新或重载已安装的扩展前，请先等待正在进行的下载完成。
 
-无需安装 Node.js、运行 npm 或自行构建。扩展安装期间请保留解压目录。发布页同时提供 [SHA-256 校验文件](https://github.com/zenvor/image-extractor-extension/releases/download/v1.1.0/image-extractor-1.1.0-chrome.zip.sha256)。
+<details>
+<summary>从源码构建</summary>
 
-### 从源码构建（可选）
-
-需要 **Chrome 120+**、**Git** 和 **Node.js 22.12+**，也可使用满足要求的更新 LTS 版本。
+需要 Git 和 Node.js 22.12+，也可使用满足要求的更新 LTS 版本。
 
 ```sh
 git clone https://github.com/zenvor/image-extractor-extension.git
@@ -45,66 +49,45 @@ npm ci
 npm run build
 ```
 
-1. 打开 `chrome://extensions`，开启「开发者模式」。
-2. 点击「加载已解压的扩展程序」，选择项目下的 `.output/chrome-mv3` 目录。
-3. 打开一个网页，点击 Image Extractor 图标。
+通过「加载已解压的扩展程序」选择 `.output/chrome-mv3`。日常开发使用 `npm install`，详见[开发说明](docs/development.md)。
 
-这里使用 `npm ci`，目的是按仓库锁文件复现依赖版本，不修改 `package-lock.json`。日常开发使用 `npm install`，区别见[开发说明](docs/development.md#dependency-installation)。
+</details>
 
-加载的是构建产物目录，而不是源码目录。重新构建或重载已安装的扩展前，请先等待正在进行的下载完成。
+## 开始使用
 
-## 快速开始
+1. 打开图片网页，加载需要保存的内容。
+2. 点击 Image Extractor 图标，筛选结果后逐张选择或点击「全选」。新结果默认不勾选。
+3. 需要匹配原图时，开启「匹配原图模式」，按提示授予图床访问权限。
+4. 点击「下载所选内容」，在「下载任务」中查看进度，下载完成前保持任务页打开。
 
-1. 打开包含图片的网页，加载需要保存的内容。
-2. 点击扩展图标，新页面会自动分析；点击「提取图像」可刷新结果。
-3. 筛选结果，逐张勾选或点击「全选」。新提取结果默认不勾选；需要使用已适配的地址规则时，开启「匹配原图模式」。
-4. 点击「下载所选内容」，按提示授予下载或网站访问权限。下载策略默认为「中等」。
-5. 在「下载任务」中查看进度。可以关闭弹窗，下载完成前请保持下载任务页打开。
+批量网址、HTML 导入、选图规则和恢复操作见[使用说明](docs/usage.zh-CN.md)。
 
-**筛选会保留隐藏图片的勾选。**「全选」选择可见结果，「取消全选」清空当前模式的全部勾选。下载、复制和 TXT 导出使用当前模式中已勾选的图片。
+## 原图支持
 
-批量网址、HTML 导入、选图规则和失败重试的详细操作见[使用说明](docs/usage.zh-CN.md)。
+- **论坛页面：** ViperGirls（`vipergirls.to`）及可访问的镜像，包括 `viperproxy.org`。
+- **外链图床：** IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice、Postimages / Pixxxels。
+- **其他地址规则：** 堆糖及其他已适配的缩略图格式，详见[原图匹配说明](docs/usage.zh-CN.md#原图匹配说明)。
 
-## 限制与隐私
+论坛支持针对当前已加载页面中的图片链接，不会自动遍历整个帖子。地址格式、域名别名及实测边界见[图床支持说明](docs/hosted-images.md)。网站改版、登录要求和限流可能影响结果。
 
-- 原图匹配依靠站点 URL 规则，不会验证实际分辨率，也不保证匹配地址可下载。站点改版、登录要求和限流可能影响结果；扩展不会绕过网站验证。
-- 跨域 iframe、封闭 Shadow DOM 和尚未加载的内容可能无法采集。本地 HTML 无法还原脚本生成的内容。
-- 关闭下载任务页会中断正在执行的任务。恢复依赖已完整缓存的文件，受浏览器存储空间和 24 小时缓存保留窗口限制，不保证一定能够恢复。
-- 每个 ZIP 最多包含 **2000 张图像**，单图 **128 MB**，图像总量 **4 GB**；HTML 导入每批最多 **20 个文件**，单文件 **16 MB**。
+## 隐私
 
-提取和地址匹配在本地执行，不依赖外部提取服务，也没有集成统计分析。预览和下载会访问源网站，并遵循浏览器的 Cookie 策略。偏好设置、任务历史和临时下载文件保存在本地。
+处理和任务存储均在本机完成。原图解析、预览和下载会访问对应的源网站；没有统计分析或开发者运营的提取服务。网站访问和下载权限按需申请，详见[隐私政策](docs/privacy-policy.md)。
 
-默认权限为 `activeTab`、`scripting` 和 `storage`；下载与网站访问权限按需申请。数据处理和保留规则见[隐私政策](docs/privacy-policy.md)。
+## 文档与贡献
 
-## 论坛图床解析
+- [使用说明](docs/usage.zh-CN.md)：选图、批量处理、ZIP 下载与恢复。
+- [下载策略](docs/download-policy.md)：共享请求限制与网站冷却。
+- [开发说明](docs/development.md)：环境准备、检查与源码结构。
+- [发布说明](docs/releasing.md)：版本管理与自动构建附件。
 
-1.1.0 为 **ViperGirls** 页面（`vipergirls.to` 及可访问的镜像）补充了图床详情页解析，并保留现有缩略图规则。范围取自论坛公布的图床清单与 gallery-dl 支持范围的交集：**IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice、Postimages / Pixxxels**，共 11 类解析器。
+欢迎提交 Issue 和 PR。反馈问题时，请提供可公开的示例网址、复现步骤及扩展版本；分享日志前请移除私人链接和 Cookie。
 
-解析针对已加载页面中的单张图片链接，不会自动遍历整个帖子。部分图床需要在你授予可选网站权限后读取图片详情页。具体地址格式、论坛范围和验证边界见[图床支持说明](docs/hosted-images.md)。
+## 致谢
 
-感谢 **[gallery-dl](https://github.com/mikf/gallery-dl)** 提供站点解析参考。本功能参考其支持范围和公开地址、页面格式，在浏览器端独立实现；上游相关源码采用 GPL-2.0，本项目未打包其 Python 源码，也未将其源码改标为 MIT。[参考来源说明](docs/hosted-images.md#reference-and-attribution)。
-
-## 文档与反馈
-
-- [使用说明](docs/usage.zh-CN.md)：选图、批量处理、ZIP 输出、重试和恢复。
-- [下载策略](docs/download-policy.md)：请求限制和网站限流处理。
-- [版本说明](docs/release-notes.md)。
-- [反馈问题](https://github.com/zenvor/image-extractor-extension/issues)：请提供扩展版本、复现步骤、预期与实际结果，以及方便公开的网页网址。分享日志或截图前，请移除私人链接、Cookie 等敏感信息。
-
-## 开发
-
-使用 React、TypeScript、WXT、Tailwind CSS 和 shadcn/ui。
-
-```sh
-npm install
-npm run typecheck
-npm test -- --maxWorkers=1
-npm run build
-npm run check:bundle
-```
-
-测试要求、隔离构建和源码位置见[开发说明](docs/development.md)；手动编写 GitHub Release、自动上传构建附件的步骤见[发布说明](docs/releasing.md)。
+- [gallery-dl](https://github.com/mikf/gallery-dl)：图床公开地址与页面格式的参考，详见[参考来源及实现说明](docs/hosted-images.md#reference-and-attribution)。
+- 预览图像来自 NASA 的 [Artemis II Lunar Flyby 图集](https://www.nasa.gov/gallery/lunar-flyby/)，详见[图像来源与截图说明](docs/store-assets/README.md)。
 
 ## 许可证
 
-采用 [MIT](LICENSE)，Copyright (c) 2026 Image Extractor contributors。第三方依赖保留各自许可；产物包含 THIRD_PARTY_LICENSES.md 与 THIRD_PARTY_NOTICES.md，复制的 shadcn/ui 源码另含 components/ui/LICENSE.md。
+[MIT](LICENSE)。第三方组件保留各自许可，发布包附带相应声明。
