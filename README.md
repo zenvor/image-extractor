@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icons/128.png" width="96" alt="Image Extractor icon">
+  <img src="public/icons/mark.png" width="96" alt="Image Extractor icon">
 </p>
 
 <h1 align="center">Image Extractor</h1>
