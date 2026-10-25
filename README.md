@@ -49,7 +49,7 @@ npm run build
 2. Select **Load unpacked** and choose the project's `.output/chrome-mv3` directory.
 3. Open a webpage and click the Image Extractor icon.
 
-`npm ci` installs the dependency versions recorded in `package-lock.json` without changing it. Use `npm install` when adding or updating dependencies; see the [development guide](docs/development.md#dependency-installation).
+This source-installation path uses `npm ci` to reproduce the committed dependency versions without changing `package-lock.json`. For everyday development, use `npm install`; see the [development guide](docs/development.md#dependency-installation).
 
 Load the built directory rather than the source directory. Finish active downloads before rebuilding or reloading an installed extension.
 
@@ -88,7 +88,7 @@ The extension requires `activeTab`, `scripting` and `storage`; download and webs
 Built with React, TypeScript, WXT, Tailwind CSS and shadcn/ui.
 
 ```sh
-npm ci
+npm install
 npm run typecheck
 npm test -- --maxWorkers=1
 npm run build

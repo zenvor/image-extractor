@@ -3,7 +3,7 @@
 React, TypeScript, WXT, Tailwind CSS, and locally bundled shadcn/ui components.
 
 ```sh
-npm ci
+npm install
 npm run typecheck
 npm test -- --maxWorkers=1
 npm run build
@@ -12,9 +12,9 @@ npm run check:bundle
 
 ## Dependency installation
 
-Use `npm ci` to reproduce the committed dependency tree for a fresh source build or CI run. It requires `package-lock.json`, fails if it disagrees with `package.json`, removes an existing `node_modules` directory, and does not rewrite either manifest or lockfile.
+For everyday development, run `npm install` in the project root to install project dependencies. With a compatible `package-lock.json`, it uses the recorded versions; if dependency requirements change, it may update the lockfile. Add a package with `npm install <package>` and review and commit intentional changes to `package.json` and `package-lock.json`.
 
-Use `npm install` for everyday dependency changes, such as `npm install <package>`. It also uses the lockfile when its versions satisfy `package.json`, but may update the lockfile when dependency requirements change. Review and commit intentional changes to both files.
+For source installation or CI builds where the aim is to reproduce the committed dependency tree, use `npm ci`. It requires `package-lock.json`, fails if it disagrees with `package.json`, removes an existing `node_modules` directory, and does not rewrite either manifest or lockfile. The optional source-installation steps in the READMEs and the release workflow use this command.
 
 A lockfile helps reproduce dependencies; it does not pin Node.js, npm, operating-system libraries or every aspect of the build environment. See the official [npm ci](https://docs.npmjs.com/cli/commands/npm-ci/) and [npm install](https://docs.npmjs.com/cli/commands/npm-install/) documentation.
 
