@@ -4,7 +4,7 @@
 
 <h1 align="center">Image Extractor</h1>
 
-<p align="center">提取网页图片，匹配已支持的原图，选择后批量下载。</p>
+<p align="center">提取网页图片、匹配原图并批量下载的 Chrome 扩展。</p>
 
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 

@@ -4,7 +4,7 @@
 
 <h1 align="center">Image Extractor</h1>
 
-<p align="center">Find images on a webpage, match supported originals, and download the ones you choose.</p>
+<p align="center">A Chrome extension to extract webpage images, find supported originals and download your selection.</p>
 
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 
