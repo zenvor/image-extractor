@@ -1,3 +1,4 @@
+import { hostedImagePages, hostedOriginalUrl, hostedPageRequestUrl } from '../lib/hostedImageHosts';
 import { unresolvedImageMessage } from '../lib/imageDiagnostics';
 import { orderedAnalysis } from '../lib/analysisQueue';
 import { scrollPage } from '../lib/scrollPage';
@@ -54,6 +55,7 @@ async function analyze(tabId: number, preferredMode?: SelectionMode, scroll = fa
       }
       if (page.challenged) throw new Error('页面仍在验证中，请在网页完成验证后重新分析。');
       state.results = resolveImages(page);
+      state.hostedPages = hostedImagePages(page);
       state.title = page.title;
       const resolvedMode = requestedMode || defaultImageFilter(state.results);
       state.selected = [];
@@ -112,7 +114,7 @@ export default defineBackground(() => {
     if (await chrome.permissions.contains({ permissions: ['downloads'] }) && attachDownloadListener()) await advanceDownloads(true);
   }
   chrome.runtime.onMessage.addListener((message: Request, sender, respond) => {
-    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'IMPORT_CAPTURE', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
+    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'IMPORT_CAPTURE', 'HOSTED_ORIGINAL', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
     (async () => {
       try {
         if (message.type === 'ANALYZE') {
@@ -130,8 +132,31 @@ export default defineBackground(() => {
           if (tab.id === undefined) throw new Error('无法创建导入结果页。');
           const mode = defaultImageFilter(results);
           const tabId = tab.id;
-          await orderedAnalysis(tabId, () => saveAnalysis({ job: crypto.randomUUID(), resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId, url: workspaceUrl, sourceUrl: /^https?:\/\//.test(capture.url) ? capture.url : undefined, status: 'done', started: Date.now(), title: capture.title, message: warning, unresolvedCount, total: capture.total, truncated: capture.truncated, results, selected: [], selectionMode: 'custom', selectionFilter: mode }));
+          await orderedAnalysis(tabId, () => saveAnalysis({ job: crypto.randomUUID(), resolverVersion: ORIGINAL_RESOLVER_VERSION, tabId, url: workspaceUrl, sourceUrl: /^https?:\/\//.test(capture.url) ? capture.url : undefined, status: 'done', started: Date.now(), title: capture.title, message: warning, unresolvedCount, total: capture.total, truncated: capture.truncated, hostedPages: hostedImagePages(capture), results, selected: [], selectionMode: 'custom', selectionFilter: mode }));
           respond({ ok: true, tabId: tab.id, count: selectBySize(results, mode).length, unresolvedCount, message: warning }); return;
+        } else if (message.type === 'HOSTED_ORIGINAL') {
+          const found = await findAnalysis(message.job);
+          if (!found) throw new Error('结果已变化，请重新提取图像。');
+          const analysis = await orderedAnalysis(found.tabId, async () => {
+            const state = await readAnalysis(found.tabId);
+            if (state?.job !== message.job || state.status !== 'done') throw new Error('结果已变化，请重新提取图像。');
+            if ((await chrome.tabs.get(state.tabId)).url !== state.url) throw new Error('结果已变化，请重新提取图像。');
+            const page = state.hostedPages?.find(page => page.url === message.pageUrl);
+            const url = page && typeof message.url === 'string' ? hostedOriginalUrl(page.url, message.url) : '';
+            if (!page || !url) throw new Error('图床原图地址无效。');
+            if (!(await chrome.permissions.contains({ origins: [new URL(hostedPageRequestUrl(page.url)).origin + '/*'] }))) throw new Error('图床访问权限已失效。');
+            // Do not fetch from a forum-supplied link or accept an unrelated provider's URL.
+            if (!state.results.some(item => item.url === url && item.candidate)) {
+              if (state.results.length >= 12000) throw new Error('图像地址已达读取上限。');
+              state.results.push({ id: 'hosted-' + state.results.length, url, source: page.source, label: page.label,
+                candidate: true, pageImage: false, width: 0, height: 0, reason: '大图 · 图床详情页' });
+            }
+            // A resolved page needs no further network access on subsequent mode switches.
+            state.hostedPages = state.hostedPages?.filter(target => target.url !== page.url);
+            await saveAnalysis(state);
+            return state;
+          });
+          respond({ ok: true, analysis }); return;
         } else if (message.type === 'SELECT') {
           const { job, selected, mode, filter } = message;
           if (typeof job !== 'string' || !job || !Array.isArray(selected) || selected.some(id => typeof id !== 'string')

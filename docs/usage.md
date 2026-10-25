@@ -27,6 +27,8 @@ Saved ZIPs with partial failures have a warning status; unsaved failures are red
 
 ## Original URL matching
 
+Some supported external image hosts require an optional detail-page lookup when original matching is enabled. Grant site access if prompted; completed lookups are saved without selecting images. See [forum host support](hosted-images.md) for the unreleased development scope and references.
+
 Matching uses site-specific URL rules; it does not upscale images or perform reverse image search. For example:
 
 ```text

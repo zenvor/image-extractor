@@ -73,7 +73,7 @@ assert.equal(analysisResponse.analysis.status, 'done');
 assert.equal(analysisResponse.analysis.job, storage['analysis:1'].job);
 const elapsed = Number((performance.now() - start).toFixed(2));
 assert.equal(storage['analysis:1'].status, 'done');
-assert.equal(storage['analysis:1'].resolverVersion, ORIGINAL_RESOLVER_VERSION + ':sources-v5');
+assert.equal(storage['analysis:1'].resolverVersion, ORIGINAL_RESOLVER_VERSION + ':sources-v6-hosted-pages-v1');
 assert.equal(storage['analysis:1'].results.find(image => image.candidate && image.source === images[0].currentSrc).url, 'https://i02.imx.to/i/2026/09/26/765kix.jpg');
 assert.equal(storage['analysis:1'].results.filter(image => image.candidate).length, 1000);
 assert.equal(storage['analysis:1'].results.filter(image => !image.candidate).length, 1000);
@@ -151,6 +151,23 @@ assert.ok(failed.analysis.message.length > 0);
 assert.equal(failed.analysis.message, storage['analysis:5'].message);
 chrome.scripting.executeScript = execute;
 console.log(JSON.stringify({ analysisResponse: 'passed', invalidatedJob: 'explicit error', injectionFailure: 'explicit error' }));
+
+// The built worker preserves selections and validates detail-host originals against its own job metadata.
+const detailState = storage['analysis:1'];
+const detail = { url: 'https://www.imagebam.com/view/MABC123', source: 'https://thumbs.imagebam.com/sample.jpg', label: 'fixture' };
+detailState.hostedPages = [detail];
+const previousSelection = [...detailState.selected];
+const detailOriginal = 'https://images4.imagebam.com/sample.jpg';
+const detailMessage = { type: 'HOSTED_ORIGINAL', job: detailState.job, pageUrl: detail.url, url: detailOriginal };
+granted = false;
+assert.equal((await send(detailMessage)).ok, false);
+granted = true;
+assert.equal((await send({ ...detailMessage, url: 'https://evil.test/sample.jpg' })).ok, false);
+assert.equal((await send(detailMessage)).ok, true);
+assert.equal(storage['analysis:1'].results.at(-1).url, detailOriginal);
+assert.deepEqual(storage['analysis:1'].selected, previousSelection);
+assert.equal(storage['analysis:1'].hostedPages.length, 0);
+console.log(JSON.stringify({ hostedOriginalJobValidation: 'passed', hostedOriginalPermission: 'passed', originalSelectionPreserved: 'passed' }));
 
 // Optional DOM-only capture from a user-reported page; never requests image bytes.
 if (process.env.IMAGE_CAPTURE_FIXTURE) {

@@ -34,7 +34,10 @@ export interface ImageResult {
   width: number;
   height: number;
 }
+export interface HostedImagePage { url: string; source: string; label: string }
 export interface AnalysisState {
+  /** Recognized external image detail pages, resolved only after a user gesture and permission. */
+  hostedPages?: HostedImagePage[];
   /** Display-only original webpage URL for imported HTML; url stays the workspace identity. */
   sourceUrl?: string;
   unresolvedCount?: number;
@@ -70,6 +73,7 @@ export interface DownloadBatch {
 export type Request =
   | { type: 'ANALYZE'; tabId: number; mode?: SelectionMode; scroll?: boolean }
   | { type: 'IMPORT_CAPTURE'; capture: PageCapture }
+  | { type: 'HOSTED_ORIGINAL'; job: string; pageUrl: string; url: string }
   | { type: 'SELECT'; job: string; selected: string[]; mode?: SelectionMode; filter?: ImageFilter }
   | { type: 'DOWNLOAD'; job: string; selected: string[] }
   | { type: 'DOWNLOAD_ZIP'; job: string; selected: string[] }

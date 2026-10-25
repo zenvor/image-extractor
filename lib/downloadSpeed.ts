@@ -1,3 +1,4 @@
+import { FORUM_IMAGE_HOSTS } from './hostedImageHosts';
 export const DOWNLOAD_SPEED_KEY = 'downloadSpeed';
 /** Hard ceiling shared by all task pages, regardless of the selected policy. */
 export const MAX_GLOBAL_DOWNLOADS = 30;
@@ -24,8 +25,8 @@ type RateState = { lastStart?: number; cooldowns?: Record<string, number>; sites
 /** Known image-host shards share one budget; unrelated tenants retain separate origins. */
 export function downloadScope(url: string) {
   const parsed = new URL(url);
-  for (const provider of ['imx.to', 'vipr.im', 'pixhost.to', 'imagebam.com', 'imgbox.com']) {
-    if (parsed.hostname === provider || parsed.hostname.endsWith('.' + provider)) return provider;
+  for (const provider of FORUM_IMAGE_HOSTS) {
+    if ([...provider.domains, ...provider.output].some(domain => parsed.hostname === domain || parsed.hostname.endsWith('.' + domain))) return provider.domains[0];
   }
   return parsed.origin;
 }

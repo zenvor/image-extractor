@@ -7,6 +7,12 @@ import App from '../entrypoints/popup/App';
 import type { AnalysisState, ArchiveBatch, Request } from '../lib/types';
 import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../lib/extractionVersion';
 
+vi.mock('../lib/downloadSpeed', async importOriginal => ({
+  ...await importOriginal<typeof import('../lib/downloadSpeed')>(),
+  withDownloadSlot: vi.fn(async (_url: string, _signal: AbortSignal, work: () => Promise<unknown>) => work()),
+  noteDownloadResponse: vi.fn(async () => {}),
+}));
+
 const results = ['海岸线', '城市日落', '山间晨光'].flatMap((label, index) => [true, false].map(candidate => ({
   id: (candidate ? 'L' : 'S') + index, label, candidate, reason: '', width: 0, height: 0,
   url: 'https://images.example/' + (candidate ? 'original' : 'thumb') + '/' + index + '.jpg',
@@ -845,5 +851,57 @@ it('can clear choices hidden in another image mode without selecting that mode a
   await click('.deselect-all-button');
   expect(analysis!.selected).toEqual([]);
   await click('.original-mode-switch');
+  expectDownloadCount(0);
+});
+it('requests detail-host permission only when original matching is enabled and preserves results after denial', async () => {
+  analysis = { ...fixture(), selected: [], selectionFilter: 'page', hostedPages: [{ url: 'https://www.imagebam.com/view/MABC123', source: results[1]!.source, label: 'sample' }] };
+  // This source has no existing deterministic original match.
+  analysis.hostedPages![0]!.source = 'https://thumbs.imagebam.com/sample.jpg';
+  const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);
+  request.mockResolvedValue(false);
+  await mount();
+  expect(request).not.toHaveBeenCalled(); expect(fetcher).not.toHaveBeenCalled();
+  await chooseType('仅原图');
+  expect(request).toHaveBeenCalledWith({ origins: ['https://imagebam.com/*'] });
+  expect(fetcher).not.toHaveBeenCalled();
+  expectDownloadCount(0);
+  expect(analysis.results).toHaveLength(results.length);
+  expect(container.textContent).toContain('未获得图床访问权限');
+});
+it('resolves permitted detail links, saves originals without selecting them, and reuses completed work', async () => {
+  const detail = { url: 'https://www.imagebam.com/view/MABC123', source: 'https://thumbs.imagebam.com/sample.jpg', label: 'sample' };
+  analysis = { ...fixture(), selected: [], selectionFilter: 'page', hostedPages: [detail] };
+  const original = { id: 'hosted-original', url: 'https://images4.imagebam.com/sample.jpg', source: detail.source, candidate: true, pageImage: false, label: 'sample', reason: '', width: 0, height: 0 };
+  const fetcher = vi.fn<typeof fetch>(async () => new Response(`<img class="main-image" src="${original.url}">`, { headers: { 'content-type': 'text/html' } }));
+  vi.stubGlobal('fetch', fetcher);
+  const originalSend = send.getMockImplementation() as (message: Request) => Promise<{ ok: boolean }>;
+  send.mockImplementation(async (message: Request) => {
+    if (message.type !== 'HOSTED_ORIGINAL') return originalSend(message);
+    const completed = { ...analysis!, hostedPages: [], results: [...analysis!.results, original] };
+    changed(completed);
+    return { ok: true, analysis: completed };
+  });
+  await mount(); await chooseType('仅原图');
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(send).toHaveBeenCalledWith({ type: 'HOSTED_ORIGINAL', job: 'test', pageUrl: detail.url, url: original.url });
+  expectDownloadCount(0);
+  expect(analysis?.hostedPages).toEqual([]);
+  await chooseType('全部图像'); await chooseType('仅原图');
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+it('cancels in-flight detail lookup when another extraction supersedes its job', async () => {
+  const detail = { url: 'https://www.imagebam.com/view/MABC123', source: 'https://thumbs.imagebam.com/sample.jpg', label: '' };
+  analysis = { ...fixture(), selected: [], selectionFilter: 'page', hostedPages: [detail] };
+  let pendingSignal: AbortSignal | undefined;
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>(async (_url, options) => {
+    pendingSignal = options?.signal as AbortSignal;
+    return new Promise<Response>((_resolve, reject) => pendingSignal!.addEventListener('abort', () => reject(pendingSignal!.reason), { once: true }));
+  }));
+  await mount(); await chooseType('仅原图');
+  expect(pendingSignal?.aborted).toBe(false);
+  await act(async () => { changed({ ...fixture(), job: 'new-extraction', selected: [], selectionFilter: 'page', hostedPages: [] }); });
+  expect(pendingSignal?.aborted).toBe(true);
+  expect(send.mock.calls.filter(([message]) => message.type === 'HOSTED_ORIGINAL')).toHaveLength(0);
+  expect(analysis?.job).toBe('new-extraction');
   expectDownloadCount(0);
 });

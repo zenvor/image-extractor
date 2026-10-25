@@ -426,3 +426,14 @@ it('honors long Retry-After and recovers both original and redirected source bud
   expect(state().sites['https://redirect.test']!.penalty).toBe(0);
   expect(state().sites['https://cdn.test']!.penalty).toBe(0);
 });
+it('groups new detail-page providers and their image CDN aliases under the same download budget', async () => {
+  const { downloadScope } = await import('../lib/downloadSpeed');
+  for (const [page, image] of [
+    ['https://postimg.cc/abc', 'https://i.postimg.cc/abc/sample.jpg'],
+    ['https://pixxxels.cc/abc', 'https://i.postimg.cc/abc/sample.jpg'],
+    ['https://www.turboimagehost.com/p/1/a.html', 'https://s1d1.turboimg.net/sample.jpg'],
+    ['https://www.imagevenue.com/ME12345678', 'https://img123.imagevenue.com/sample.jpg'],
+    ['https://imagetwist.com/abcdefgh1234', 'https://img200.imagetwist.com/i/sample.jpg'],
+  ]) expect(downloadScope(page!)).toBe(downloadScope(image!));
+  expect(downloadScope('https://imagetwist.com.evil.test/sample.jpg')).toBe('https://imagetwist.com.evil.test');
+});

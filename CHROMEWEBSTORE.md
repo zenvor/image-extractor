@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-25. Candidate version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
+Last updated: 2026-10-26. Submitted version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
 
 ## Store listing
 
@@ -125,3 +125,9 @@ Submitted on 2026-10-25 (Asia/Taipei). Dashboard status: Pending review. Automat
 Dashboard: https://chrome.google.com/webstore/devconsole/82288fad-14d3-4394-9d40-822576edd142/ndeaeajbbikgkghamnlmckbiocdfmonp/edit/status
 
 Store item ID: ndeaeajbbikgkghamnlmckbiocdfmonp. Submission screenshot retained locally under .output-staged/store-assets/submission-confirmed.jpg. No scheduled monitoring created.
+
+## Unreleased: forum image-detail lookup (2026-10-26)
+
+The development implementation resolves individual external image-detail links on ViperGirls pages and accessible mirrors for eleven provider families; see docs/hosted-images.md. Optional access to the relevant image-host origins is requested when original matching is enabled. Detail-page HTML is read locally to locate image URLs; remote scripts are not executed. Original discovery therefore may contact a selected source image host before preview or download. There is no new developer endpoint, analytics, login service or manufactured verification cookie. Manifest permissions are unchanged.
+
+The submitted and published 1.0.0 artifacts do not include this change. Update the store package and screenshots only after validation and a deliberate versioned release.

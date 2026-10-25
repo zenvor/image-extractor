@@ -76,6 +76,14 @@ Extraction and URL matching run locally, with no external extraction service or 
 
 The extension requires `activeTab`, `scripting` and `storage`; download and website-access permissions are requested when needed. See the [privacy policy](docs/privacy-policy.md) for data handling and retention.
 
+## Forum image hosts (development)
+
+The unreleased development branch adds image-detail lookup for **ViperGirls** pages (`vipergirls.to` and accessible mirrors), alongside the existing thumbnail rules. The target is the forum's documented image-host list intersected with gallery-dl support: **IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages / Pixxxels** (11 provider families).
+
+This is individual-image resolution on the loaded page, not automatic crawling of an entire thread. Some hosts require reading their image-detail pages after you grant optional site access. The published **1.0.0 ZIP does not include this development feature**. See [host formats, forum scope and validation limits](docs/hosted-images.md).
+
+This work references **[gallery-dl](https://github.com/mikf/gallery-dl)** for supported service behavior and URL/page formats, with an independent browser-side implementation. Upstream source files carry GPL-2.0 notices; no gallery-dl Python source is bundled or relabeled as MIT. [Reference details](docs/hosted-images.md#reference-and-attribution).
+
 ## Documentation and feedback
 
 - [Usage guide](docs/usage.md): selection, batches, ZIP output, retries and recovery.

@@ -12,7 +12,7 @@ export function httpUrl(value: string, base: string): string {
   } catch { return ''; }
 }
 
-// Explicit host/path mappings only; extension never requests these URLs.
+// Pure host/path mappings. Optional detail-page lookup is handled separately.
 export function originalCandidate(source: string): string {
   const resolved = resolveOriginalImage(source, { type: 'transparent' });
   return (resolved.status === 'resolved' || resolved.status === 'unchanged' && resolved.resolver === 'legacy-compatible-rule') && resolved.url ? resolved.url : '';

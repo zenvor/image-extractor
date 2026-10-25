@@ -76,6 +76,14 @@ npm run build
 
 默认权限为 `activeTab`、`scripting` 和 `storage`；下载与网站访问权限按需申请。数据处理和保留规则见[隐私政策](docs/privacy-policy.md)。
 
+## 论坛图床解析（开发中）
+
+尚未发布的开发实现为 **ViperGirls** 页面（`vipergirls.to` 及可访问的镜像）补充了图床详情页解析，并保留现有缩略图规则。范围取自论坛公布的图床清单与 gallery-dl 支持范围的交集：**IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice、Postimages / Pixxxels**，共 11 类解析器。
+
+解析针对已加载页面中的单张图片链接，不会自动遍历整个帖子。部分图床需要在你授予可选网站权限后读取图片详情页。**已发布的 1.0.0 ZIP 尚不包含这项开发功能。**具体地址格式、论坛范围和验证边界见[图床支持说明](docs/hosted-images.md)。
+
+感谢 **[gallery-dl](https://github.com/mikf/gallery-dl)** 提供站点解析参考。本功能参考其支持范围和公开地址、页面格式，在浏览器端独立实现；上游相关源码采用 GPL-2.0，本项目未打包其 Python 源码，也未将其源码改标为 MIT。[参考来源说明](docs/hosted-images.md#reference-and-attribution)。
+
 ## 文档与反馈
 
 - [使用说明](docs/usage.zh-CN.md)：选图、批量处理、ZIP 输出、重试和恢复。
