@@ -34,4 +34,4 @@ Privacy questions: luckxiaomi@gmail.com.
 
 ## Development feature: image-host page lookup
 
-The unreleased development implementation can request recognized image-host detail pages when you enable original matching and grant optional site access. It reads their HTML locally to locate an image address; the host receives ordinary request information and cookies under browser policy. Fetched scripts are not executed. The published 1.0.0 package does not include this feature.
+Version 1.1.0 can request recognized image-host detail pages when you enable original matching and grant optional site access. It reads their HTML locally to locate an image address; the host receives ordinary request information and cookies under browser policy. Fetched scripts are not executed.

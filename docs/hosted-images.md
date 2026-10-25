@@ -1,6 +1,6 @@
 # Forum image-host resolution
 
-This document describes the **unreleased development implementation**, not the published 1.0.0 ZIP or the package already submitted to the Chrome Web Store.
+This document describes image-host resolution in **1.1.0**. The previously submitted Chrome Web Store package is 1.0.0 and does not contain this feature.
 
 ## Scope and evidence
 
@@ -51,11 +51,11 @@ The referenced upstream files carry GPL-2.0 notices. Image Extractor implements 
 
 Provider-shaped synthetic tests exercise all eleven parser families and Pixxxels aliases. Integration tests cover permission denial, stale jobs, provider validation, partial success and cancellation. Those checks do not prove that every current live image page, historical thumbnail format or mirror works. Live site outcomes must be recorded separately before claiming end-to-end compatibility or publishing a new store package.
 
-### Development checks (2026-10-26)
+### Version 1.1.0 checks (2026-10-26)
 
 - Chrome fixture page: all eleven synthetic provider cases plus the inert-HTML case passed (12/12). This was a separate local parser harness; the installed extension was not reloaded.
 - Live HTML reads: saved responses from Vipr, Pixhost and ImageTwist produced provider-scoped original URLs. No photo bytes were downloaded as part of these checks.
 - Other sample responses exposed normal IMX intermission forms and ImageBam/Imagevenue canonical redirects; the implementation handles the form and canonical request URL. This does not establish a successful complete lookup on those hosts.
 - TurboImageHost returned HTTP 403, Imgspice timed out, a Postimages sample returned 404, and the Acidimg sample did not contain a usable original. Those services remain covered by synthetic parser tests, with live compatibility unverified.
 
-These outcomes are sample-specific. They are not evidence that all current or historical posts can be downloaded, and no new store package or release asset was published for this work.
+These outcomes are sample-specific. They are not evidence that all current or historical posts can be downloaded, and do not establish Chrome Web Store approval of 1.1.0.
