@@ -1,10 +1,12 @@
 # Image Extractor
 
+[English](README.md) | **简体中文**
+
 **从网页提取图像，按已适配规则匹配原图地址，将所选图片打包为 ZIP。**
 
 支持当前网页、批量网址和本地 HTML 文件，提供图像预览、筛选和链接导出。全部功能免费，无需账号，界面支持简体中文与英文。
 
-当前源码版本：**1.0.0**。已于 2026 年 10 月 25 日提交 Chrome 商店，最后核验状态为**审核中**。目前可按下文步骤从源码安装。
+正式版 **[1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)** 已发布，可直接下载下方 Chrome ZIP 安装包，源码构建为可选方式。Chrome 商店于 2026 年 10 月 25 日提交，最后核验状态为**审核中**。
 
 ![Chrome 中的 Image Extractor 1.0.0，新结果默认未勾选](docs/store-assets/screenshot-zh.jpg)
 
@@ -18,7 +20,21 @@ Chrome 实机截图。图像来源：NASA 的 [Artemis II Lunar Flyby 图集](ht
 - **下载与恢复：** 将所选图片按顺序编号并保存为 ZIP，在统一任务页查看进度；可单独重试失败图片，或在有效缓存可用时恢复中断任务。五档下载策略用于调节请求压力。
 - **导出链接：** 复制所选图像网址，或保存为 TXT 链接清单。
 
-## 从源码安装
+## 安装
+
+需要 **Chrome 120+**。
+
+### 下载正式版 ZIP（推荐）
+
+1. 从 [1.0.0 发布页](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)下载 [image-extractor-1.0.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip)。请选择该扩展安装包，而不是 GitHub 自动提供的 **Source code** 源码压缩包。
+2. 解压到电脑上准备长期保留的目录。
+3. 打开 `chrome://extensions`，开启「开发者模式」。
+4. 点击「加载已解压的扩展程序」，选择解压后包含 `manifest.json` 的目录。
+5. 打开一个网页，点击 Image Extractor 图标。
+
+无需安装 Node.js、运行 npm 或自行构建。扩展安装期间请保留解压目录。发布页同时提供 [SHA-256 校验文件](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip.sha256)。
+
+### 从源码构建（可选）
 
 需要 **Chrome 120+**、**Git** 和 **Node.js 22.12+**，也可使用满足要求的更新 LTS 版本。
 
@@ -32,6 +48,8 @@ npm run build
 1. 打开 `chrome://extensions`，开启「开发者模式」。
 2. 点击「加载已解压的扩展程序」，选择项目下的 `.output/chrome-mv3` 目录。
 3. 打开一个网页，点击 Image Extractor 图标。
+
+`npm ci` 按 `package-lock.json` 中记录的依赖版本安装，不修改锁文件；添加或更新依赖时使用 `npm install`，区别见[开发说明](docs/development.md#dependency-installation)。
 
 加载的是构建产物目录，而不是源码目录。重新构建或重载已安装的扩展前，请先等待正在进行的下载完成。
 

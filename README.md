@@ -1,10 +1,12 @@
 # Image Extractor
 
+**English** | [简体中文](README.zh-CN.md)
+
 **Extract images from webpages, match supported thumbnail URLs to originals, and download your selection as a ZIP.**
 
 Preview and filter images from the current page, batches of URLs, or saved HTML files. All features are free, with no account required. The interface supports English and Simplified Chinese.
 
-Current source version: **1.0.0**. Submitted to the Chrome Web Store on October 25, 2026; the last verified status was **pending review**. For now, build from source using the steps below.
+Stable release: **[1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0)**. Download the ready-to-load Chrome ZIP below; building from source is optional. The Chrome Web Store submission was last verified as **pending review** on October 25, 2026.
 
 ![Image Extractor 1.0.0 in Chrome, with two images manually selected](docs/store-assets/screenshot-en.jpg)
 
@@ -18,7 +20,21 @@ Real Chrome capture. Imagery: NASA's [Artemis II Lunar Flyby gallery](https://ww
 - **Download and recover.** Save selected images as numbered files in a ZIP. View tasks in one download manager, retry failed images separately, or recover interrupted tasks when valid cached files are available. Five download policies control request pressure.
 - **Export links.** Copy selected image URLs or save them as a TXT list.
 
-## Install from source
+## Install
+
+Requires **Chrome 120+**.
+
+### Download the release ZIP (recommended)
+
+1. Download [image-extractor-1.0.0-chrome.zip](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip) from the [1.0.0 release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0). Choose this extension ZIP rather than GitHub's **Source code** archives.
+2. Extract it to a folder you will keep on your computer.
+3. Open `chrome://extensions` and enable **Developer mode**.
+4. Select **Load unpacked** and choose the extracted folder containing `manifest.json`.
+5. Open a webpage and click the Image Extractor icon.
+
+No Node.js, npm or build step is needed. Keep the extracted folder in place while the extension is installed. A [SHA-256 checksum](https://github.com/zenvor/image-extractor-extension/releases/download/v1.0.0/image-extractor-1.0.0-chrome.zip.sha256) is available alongside the ZIP.
+
+### Build from source (optional)
 
 You need **Chrome 120+**, **Git**, and **Node.js 22.12+** (or a newer supported LTS release).
 
@@ -32,6 +48,8 @@ npm run build
 1. Open `chrome://extensions` and enable **Developer mode**.
 2. Select **Load unpacked** and choose the project's `.output/chrome-mv3` directory.
 3. Open a webpage and click the Image Extractor icon.
+
+`npm ci` installs the dependency versions recorded in `package-lock.json` without changing it. Use `npm install` when adding or updating dependencies; see the [development guide](docs/development.md#dependency-installation).
 
 Load the built directory rather than the source directory. Finish active downloads before rebuilding or reloading an installed extension.
 

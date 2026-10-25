@@ -1,6 +1,6 @@
-# Image Extractor 1.0.0 — Chrome Web Store submission
+# Image Extractor 1.0.0 — First stable release
 
-Submitted to the Chrome Web Store on 2026-10-25. Status: Pending review, with automatic publication after approval enabled. This is not yet a published release. Core Chrome download, failed-only retry, cancellation/recovery and two-page isolation smoke checks passed; five-page simultaneous transfers and narrow-screen manual checks remain unverified.
+[GitHub Release 1.0.0](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.0.0) is published with the Chrome extension ZIP and SHA-256 checksum. The Chrome Web Store submission was last verified as pending review on 2026-10-25, with automatic publication after approval enabled. Core Chrome download, failed-only retry, cancellation/recovery and two-page isolation smoke checks passed; five-page simultaneous transfers and narrow-screen manual checks remain unverified.
 
 Extract webpage images, resolve original URLs from supported thumbnails, and save selected images as ZIP archives.
 
