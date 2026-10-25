@@ -1,8 +1,13 @@
-# Image Extractor 0.6.7 — First public release candidate
+# Image Extractor 0.6.8 — First public release candidate
 
 Draft release notes. The package is prepared locally; this is not a published release. Full Chrome download acceptance is pending.
 
 Extract webpage images, resolve original URLs from supported thumbnails, and save selected images as ZIP archives.
+
+## Changes in 0.6.8
+
+- Match the popup workspace to extract.pics' live result-canvas background, `oklch(0.967 0.001 286.375)`. Both sidebar and image canvas use one shared surface token; the header, white cards and layout remain unchanged.
+- Candidate production build and bundle checks pass. The reference color was read from the live site's computed style after extraction. Installed Chrome reload and visual acceptance remain unverified because its internal pages displayed blank during this check; no reload was attempted without confirming download state.
 
 ## Changes in 0.6.7
 

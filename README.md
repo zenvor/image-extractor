@@ -6,7 +6,7 @@
 
 Image Extractor works with the current webpage, batches of URLs, and saved HTML files. Preview and filter page images, optionally enable original matching, then download a ZIP, copy the selected URLs, or export a link list. Downloads support failed-only retries, cache-based recovery, and five adjustable download policies.
 
-Current version: **0.6.7**. Install as an unpacked Chrome extension using the instructions below.
+Current version: **0.6.8**. Install as an unpacked Chrome extension using the instructions below.
 
 ## Screenshots
 

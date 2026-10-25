@@ -1,12 +1,12 @@
 # Manual Chrome acceptance for the first release candidate
 
-Current source version: 0.6.7. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
+Current source version: 0.6.8. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
 
 ## Preparation
 
 1. Finish any active downloads before replacing or reloading the installed extension.
 2. Load the verified candidate at `.output-staged/chrome-mv3`, or synchronize it to the existing unpacked installation and reload that installation manually. Do not leave duplicate extension instances enabled.
-3. Confirm version 0.6.7 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
+3. Confirm version 0.6.8 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
 4. From the project root, start the local fixtures: `python3 examples/release-smoke.py`.
 5. Open `http://127.0.0.1:8197` in Chrome. The fixtures use local SVG files, not external image hosts. Request counters distinguish image previews from other requests using Sec-Fetch-Dest; they are diagnostic counts, not measured network concurrency.
 
