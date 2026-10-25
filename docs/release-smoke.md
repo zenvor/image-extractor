@@ -1,12 +1,12 @@
 # Manual Chrome acceptance for the first release candidate
 
-Current source version: 0.6.8. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
+Current source version: 1.0.0. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
 
 ## Preparation
 
 1. Finish any active downloads before replacing or reloading the installed extension.
 2. Load the verified candidate at `.output-staged/chrome-mv3`, or synchronize it to the existing unpacked installation and reload that installation manually. Do not leave duplicate extension instances enabled.
-3. Confirm version 0.6.8 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
+3. Confirm version 1.0.0 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
 4. From the project root, start the local fixtures: `python3 examples/release-smoke.py`.
 5. Open `http://127.0.0.1:8197` in Chrome. The fixtures use local SVG files, not external image hosts. Request counters distinguish image previews from other requests using Sec-Fetch-Dest; they are diagnostic counts, not measured network concurrency.
 
@@ -48,3 +48,15 @@ Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitor
 - Chrome reported Reloaded; overview retained 19 historical tasks and 0 active. Exactly one global folder button is present above the table, with no task-details buttons. Clicking it opened Finder Downloads.
 - Actual rows show ZIP filenames, full source URLs and failure causes, including historical HTTP 503 and timeout errors. Long failure lists have their own bounded scrolling area. Bright amber indicators and pale warning badges were visually confirmed.
 - Screenshot evidence was retained locally. No new image transfer was started for this visual check; active stage transitions and narrow-screen real-browser checks remain pending.
+
+## Version 1.0.0 Chrome smoke (2026-10-25)
+
+- Confirmed the existing loaded 0.6.7 manager had 20 historical tasks and zero active downloads before replacement. Backed up the loaded build under the ignored candidate directory, copied the exact candidate files and confirmed Chrome reported Reloaded and version 1.0.0. User task storage was not cleared.
+- On the local normal-download fixture, the actual popup showed three SVG images and zero initial selections. Select all enabled download for exactly three images.
+- Chrome reported the saved ZIP as Done (1,225 bytes). Independently opened that exact saved file, verified ZIP CRC and the three SVG entries: 001_a.svg, 002_b.svg and 003_c.svg.
+- This smoke does not yet establish final-build failed-only retry, cancellation/recovery, five-page isolation, narrow-screen behavior or refreshed store screenshots. Earlier version acceptance and automated checks remain separately documented.
+
+- Final 1.0.0 failed-only retry: first ZIP contained a.svg, b.svg and the failure report; after repairing the controlled HTTP 404, the supplementary ZIP contained only 003_retry.svg. Download request counts for a and b remained one each; retry rose from two (including its automatic retry) to three. Both ZIP CRCs passed.
+- Final 1.0.0 cancellation/recovery: cancelled after four of six files completed, then resumed the same task. Chrome saved a six-SVG ZIP; CRC and SVG content passed. Four completed files were each requested once; only the two interrupted slow files were requested twice.
+- During resumed transfer, page B showed its own one-image result and zero initial selections. Chinese interface preference restored afterward. No active downloads remained.
+- Real NASA-gallery screenshots refreshed from version 1.0.0 in both languages; store dimensions and preparation are documented in store-assets/README.md. Five-page simultaneous transfers and narrow-screen manual checks remain unverified; automated coverage is retained.

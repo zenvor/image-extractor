@@ -1,6 +1,6 @@
 {
   "name": "image-extractor-extension",
-  "version": "0.6.8",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,8 +1,13 @@
-# Image Extractor 0.6.8 — First public release candidate
+# Image Extractor 1.0.0 — Chrome Web Store submission
 
-Draft release notes. The package is prepared locally; this is not a published release. Full Chrome download acceptance is pending.
+Submitted to the Chrome Web Store on 2026-10-25. Status: Pending review, with automatic publication after approval enabled. This is not yet a published release. Core Chrome download, failed-only retry, cancellation/recovery and two-page isolation smoke checks passed; five-page simultaneous transfers and narrow-screen manual checks remain unverified.
 
 Extract webpage images, resolve original URLs from supported thumbnails, and save selected images as ZIP archives.
+
+## Changes in 1.0.0
+
+- Prepare the first stable release with all image extraction and original-matching features available free of charge. No payment, account or sponsorship integration is included.
+- Consolidate store listing, permission justifications and submission prerequisites in CHROMEWEBSTORE.md. This version has been submitted; approval is pending.
 
 ## Changes in 0.6.8
 
@@ -46,6 +51,8 @@ Unzip the Chrome package, open chrome://extensions, enable Developer mode, and l
 Original matching depends on supported URL patterns and does not verify original resolution during extraction. Website verification must be completed by the user. Recovery reuses completed cached files; it is not byte-level HTTP Range resume. Download limits cannot guarantee that a website will not throttle requests.
 
 ## Validation
+
+The 1.0.0 candidate passed type checking, production build, bundle checks, icon/description validation and ZIP CRC checks. All 390 tests passed: 388 inside the sandbox, with two real-loopback HTTP tests rerun outside it after the sandbox denied binding to 127.0.0.1. Core final-package Chrome smoke checks passed, including native saving, failed-only retry, cancellation/recovery and two-page isolation. Five-page simultaneous transfers and narrow-screen manual checks remain unverified; Chrome Web Store review is pending.
 
 All 390 tests in 21 files pass, including real loopback HTTP/disk-stream checks for continuous transfers, failed-only retry and cancellation recovery. Type checking, candidate production build and production-bundle checks pass. Manager tests cover five pages, independent controllers, shared page reuse, language changes, permission revocation, page unload, and stale snapshot updates.
 
