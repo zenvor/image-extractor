@@ -1,0 +1,22 @@
+node_modules/
+.wxt/
+.output/
+*.zip
+
+.output-staged/
+.DS_Store
+
+# Local credentials and logs
+.env
+.env.*
+!.env.example
+*.log
+*.pem
+*.key
+*.p12
+
+# Local audit history and release evidence (kept on the development machine)
+.local/
+docs/development-history.md
+docs/open-source-readiness.md
+docs/ui-design.md

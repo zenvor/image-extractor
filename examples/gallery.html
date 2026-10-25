@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>Image Extractor 本地公开风景样例</title>
+<style>body{font:16px system-ui;max-width:800px;margin:40px auto}img{width:200px;margin:12px;background:#edf4ef}</style>
+<h1>本地风景样例</h1><p>预期识别普通图片、声明大图、srcset 候选并去重。所有 SVG 均为本地绘制，不连接远程服务。</p>
+<a href="landscape.svg"><img src="landscape.svg?size=small" alt="山间晨光" data-original="landscape.svg"></a>
+<img src="landscape.svg?view=coast" alt="海岸线" srcset="landscape.svg?size=640 640w, landscape.svg?size=1600 1600w">
+<img src="landscape.svg?view=forest" alt="森林小径">
+<p>以下仅模拟懒加载 URL，用于检查 imx 路径规则，不发起远程图片请求：</p>
+<img data-src="https://image.imx.to/u/t/2026/05/24/landscape.jpg" alt="imx 规则本地测试">
+</html>

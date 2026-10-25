@@ -1,0 +1,5 @@
+{
+  "extensionDescription": {
+    "message": "从网页或 HTML 提取图像，按已适配规则匹配缩略图的原图地址，支持 ZIP 下载、失败重试和缓存恢复。"
+  }
+}

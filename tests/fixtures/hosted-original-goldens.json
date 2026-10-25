@@ -1,0 +1,42 @@
+[
+  {
+    "input": "https://image.imx.to/u/t/2026/05/24/landscape.jpg",
+    "output": "https://i02.imx.to/i/2026/05/24/landscape.jpg"
+  },
+  {
+    "input": "https://image.imx.to/u/t/2026/09/26/765kix.jpg",
+    "output": "https://i02.imx.to/i/2026/09/26/765kix.jpg"
+  },
+  {
+    "input": "https://t01.imx.to/t/2026/05/24/landscape.jpg",
+    "output": "https://i02.imx.to/i/2026/05/24/landscape.jpg"
+  },
+  {
+    "input": "https://i01.imx.to/t/abc/a.jpg?size=1",
+    "output": "https://i01.imx.to/i/abc/a.jpg?size=1"
+  },
+  {
+    "input": "https://imx.to/upload/small/a.jpg",
+    "output": "https://i001.imx.to/i/a.jpg"
+  },
+  {
+    "input": "https://vipr.im/th/a.jpg",
+    "output": "https://vipr.im/i/a.jpg"
+  },
+  {
+    "input": "https://thumbs2.imgbox.com/12/34/a_t.jpg",
+    "output": "https://images2.imgbox.com/12/34/a_o.jpg"
+  },
+  {
+    "input": "https://img119.imagetwist.com/th/12/a.jpg",
+    "output": "https://img119.imagetwist.com/i/12/a.jpg"
+  },
+  {
+    "input": "https://t99.pixhost.to/thumbs/123/a.jpg",
+    "output": "https://img99.pixhost.to/images/123/a.jpg"
+  },
+  {
+    "input": "https://image.imx.to/u/t/2026/09/26/765kiy.jpg",
+    "output": "https://i02.imx.to/i/2026/09/26/765kiy.jpg"
+  }
+]
