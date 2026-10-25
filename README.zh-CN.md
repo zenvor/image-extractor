@@ -49,7 +49,7 @@ npm run build
 2. 点击「加载已解压的扩展程序」，选择项目下的 `.output/chrome-mv3` 目录。
 3. 打开一个网页，点击 Image Extractor 图标。
 
-`npm ci` 按 `package-lock.json` 中记录的依赖版本安装，不修改锁文件；添加或更新依赖时使用 `npm install`，区别见[开发说明](docs/development.md#dependency-installation)。
+这里使用 `npm ci`，目的是按仓库锁文件复现依赖版本，不修改 `package-lock.json`。日常开发使用 `npm install`，区别见[开发说明](docs/development.md#dependency-installation)。
 
 加载的是构建产物目录，而不是源码目录。重新构建或重载已安装的扩展前，请先等待正在进行的下载完成。
 
@@ -88,7 +88,7 @@ npm run build
 使用 React、TypeScript、WXT、Tailwind CSS 和 shadcn/ui。
 
 ```sh
-npm ci
+npm install
 npm run typecheck
 npm test -- --maxWorkers=1
 npm run build
