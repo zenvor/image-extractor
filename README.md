@@ -1,134 +1,73 @@
 # Image Extractor
 
-**A Chrome extension to extract webpage images, resolve original URLs from supported thumbnails, and download selected images as ZIP archives.**
+**Extract images from webpages, match supported thumbnail URLs to originals, and download your selection as a ZIP.**
 
-[简体中文](README.zh-CN.md) · [MIT License](LICENSE)
+Preview and filter images from the current page, batches of URLs, or saved HTML files. All features are free, with no account required. The interface supports English and Simplified Chinese.
 
-Image Extractor works with the current webpage, batches of URLs, and saved HTML files. Preview and filter page images, optionally enable original matching, then download a ZIP, copy the selected URLs, or export a link list. Downloads support failed-only retries, cache-based recovery, and five adjustable download policies.
+Current source version: **1.0.0**. Submitted to the Chrome Web Store on October 25, 2026; the last verified status was **pending review**. For now, build from source using the steps below.
 
-Current version: **0.6.8**. Install as an unpacked Chrome extension using the instructions below.
+![Image Extractor 1.0.0 in Chrome, with two images manually selected](docs/store-assets/screenshot-en.jpg)
 
-## Screenshots
-
-Real Chrome extension captures at 1628 × 1228, showing NASA's lunar-flyby gallery filtered by `art002e009`. The English view has two manually selected images; new results start unselected, as shown in the [Chinese capture](docs/screenshots/popup-zh-CN.jpg).
-
-![Image Extractor in Chrome with two manually selected NASA images](docs/screenshots/popup-en.jpg)
-
-Imagery credit: NASA, from the [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). These interface examples do not imply NASA affiliation or endorsement. [Capture details](docs/screenshots/README.md).
+Real Chrome capture. Imagery: NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). No NASA affiliation or endorsement is implied. [Screenshot preparation](docs/store-assets/README.md).
 
 ## Features
 
-- **Image discovery:** Collect `img` / `picture` sources, common lazy-loading attributes, direct image links, and image metadata. Website icons, CSS backgrounds, embedded images, and inline SVG are optional and enabled by default.
-- **Thumbnail-to-original URL matching:** Built-in rules cover supported address patterns on IMX, Imgbox, Pixhost, Vipr, Duitang, and other image hosts. The default view contains image URLs found on the page. Enable **Match original images** to show only supported matches; no matches produce an empty result.
-- **Batch URLs and local HTML:** Process up to 20 webpages or HTML files per batch, with per-page results, progress, stop controls, and download outcomes. Local HTML supports an original webpage URL or a valid `<base>` for relative links.
-- **Compact image workspace:** Proportional, uncropped previews; grid/list views; format and text filters; full-selection controls; keyboard navigation; a dark preview background; and preview failure retries. Images retain page discovery order.
-- **ZIP downloads:** Page-title archive names, numbered image filenames, unchanged image bytes, and a single image set for the active mode. Partial success retains downloaded images and includes a failure report.
-- **Retry and recovery:** Retry only failed images without fetching successful ones again. Interrupted tasks can reuse completed files from valid, checked local cache for up to 24 hours.
-- **Five-step download slider:** Low, Medium, High, Extra High, and Max. Shared concurrency, request spacing, and server-driven cooldown apply across task pages. Medium is the default.
-- **Page isolation:** Selections and download progress belong to the source tab and URL. Another page can start its own task while all tasks share the same network limits.
-- **Shared download manager:** View tasks from every page in one table, with independent progress, cancellation, retry, and recovery. ZIP filenames, source URLs, and failure causes are shown in the task row. One global button opens the downloads folder.
-- **Link export and languages:** Copy selected URLs or export TXT. English and Simplified Chinese follow the browser language by default; the header language selector synchronizes across extension pages.
+- **Find and filter images.** Collect ordinary and lazy-loaded images, with optional icons, CSS backgrounds and embedded images. Preview results in a grid or list and filter by format or text.
+- **Match supported originals.** Convert supported thumbnail URL patterns on IMX, Imgbox, Pixhost, Vipr, Duitang and other image hosts. Ordinary page-image extraction also works without an original-matching rule.
+- **Process multiple sources.** Extract from the current webpage, up to 20 webpage URLs, or up to 20 local HTML files per batch.
+- **Download and recover.** Save selected images as numbered files in a ZIP. View tasks in one download manager, retry failed images separately, or recover interrupted tasks when valid cached files are available. Five download policies control request pressure.
+- **Export links.** Copy selected image URLs or save them as a TXT list.
 
 ## Install from source
 
-Requirements: Chrome **120+** and Node.js **22.12+**, or a newer LTS version satisfying the dependency engine requirements.
+You need **Chrome 120+**, **Git**, and **Node.js 22.12+** (or a newer supported LTS release).
 
 ```sh
+git clone https://github.com/zenvor/image-extractor-extension.git
+cd image-extractor-extension
 npm ci
 npm run build
 ```
 
 1. Open `chrome://extensions` and enable **Developer mode**.
-2. Select **Load unpacked** and choose `.output/chrome-mv3`.
-3. Open a webpage and click the extension icon.
+2. Select **Load unpacked** and choose the project's `.output/chrome-mv3` directory.
+3. Open a webpage and click the Image Extractor icon.
 
-Load the build directory, not the source directory. Builds do not launch or reload Chrome automatically. Keep active download task pages open and wait for downloads to finish before reloading the extension.
+Load the built directory rather than the source directory. Finish active downloads before rebuilding or reloading an installed extension.
 
-## Use
+## Quick start
 
-1. Open a page containing images. Complete any website verification yourself and load the desired page content.
-2. Open Image Extractor. It automatically analyzes a new page and restores matching results when available. Use **Extract images** to refresh results.
-3. Choose page images (default) or enable **Match original images**, then use format and search filters. New extraction results start with nothing selected. Click individual images or use **Select all**. Switching mode does not add selections; previous manual choices are retained, and downloads, copying and TXT export use only the current mode. Reopening the same results restores your manual choices; re-extracting starts a new, unselected result set. Search and format filters preserve hidden selections within that mode. **Select all** selects visible results; **Deselect all** clears every selection, including hidden ones.
-4. Choose a download policy, then select **Download selected**. Chrome requests download and image-host access permissions when needed.
-5. Open **Download task** in the sidebar to view all page downloads in one place. You may close the popup; keep the download manager open until its tasks finish.
-6. Use the sidebar **Copy URLs** and **Export TXT** buttons. Single-image actions copy a URL or save that image in a ZIP.
-7. Open **Batch / HTML** in the sidebar for batch processing. Open each webpage and choose images through the extension, or open an imported HTML result workspace and choose images there, before starting downloads. Optional bounded scrolling loads more page content and then restores the scroll position.
+1. Open a page containing images and load the content you want to save.
+2. Click the extension icon. New pages are analyzed automatically; use **Extract images** to refresh the results.
+3. Filter the results and select images individually or with **Select all**. New extraction results start unselected. Enable **Match original images** if you want supported URL matches.
+4. Select **Download selected** and grant download or site permissions when prompted. The default download policy is **Medium**.
+5. Follow progress in **Download task**. You can close the popup, but keep the download manager open until the tasks finish.
 
-**Other image sources** controls icons, CSS backgrounds, and embedded images/SVG and takes effect on the next extraction. Disabling all additional sources still extracts ordinary page images. The download slider previews a policy while dragging and saves it on release; arrow keys, Home, and End also work. Settings synchronize across task pages.
+**Filtering preserves hidden selections.** Select all chooses visible results; Deselect all clears every selection in the current mode. Downloads, copying and TXT export use the current mode's selected images.
 
-## Download manager
+For batch URLs, HTML import, selection behavior and retry instructions, see the [usage guide](docs/usage.md).
 
-All webpages share one task overview. Each task has its own selection snapshot, progress, cancellation, failed-only retry, and cache recovery. Closing this page interrupts the tasks it is running; completed cached files can be reused when recovery is available.
+## Limits and privacy
 
-- **Read the results in the row:** ZIP filename, source webpage URL (or the local HTML label when no original page URL was provided), successful/failed image counts, file size, and failure causes are shown directly. Long failure lists scroll within the row; no separate details dialog is needed.
-- **Distinguish processing from saving:** Purple means successful images, amber means failed images, and gray means pending images. A fully processed bar can include failures. Packing and saving remain indeterminate until Chrome confirms the ZIP save.
-- **Recover only what is missing:** Retry failed images without fetching successful ones again, or resume an interrupted task from valid local cache. Each action affects only its own task.
-- **Open the downloads folder:** The single button above the table opens Chrome's default downloads folder. It applies to all tasks.
+- Original matching uses site-specific URL rules. It does not verify resolution or guarantee a downloadable original. Website changes, authentication and throttling can affect extraction and downloads; the extension does not bypass verification.
+- Cross-origin frames, closed shadow roots and content that has not loaded may be inaccessible. Imported HTML cannot reproduce script-generated content.
+- Closing the download manager interrupts active tasks. Recovery reuses complete cached files where available; browser storage limits and the 24-hour cache retention window mean recovery is not guaranteed.
+- Each ZIP supports up to **2,000 images**, **128 MB per image** and **4 GB of image data**. HTML imports support up to **20 files**, **16 MB each**.
 
-Saved ZIPs with partial failures have a warning status; unsaved failures are red, and cancellation is neutral. Status labels and numeric counts accompany the colors. On narrow screens the same task rows wrap without restarting downloads.
+Extraction and URL matching run locally, with no external extraction service or analytics. Previews and downloads contact the source websites and follow browser cookie policies. Preferences, task history and temporary download files are stored locally.
 
-## Original URL matching
+The extension requires `activeTab`, `scripting` and `storage`; download and website-access permissions are requested when needed. See the [privacy policy](docs/privacy-policy.md) for data handling and retention.
 
-Matching uses site-specific URL rules; it does not upscale images or perform reverse image search. For example:
+## Documentation and feedback
 
-```text
-https://image.imx.to/u/t/<path>/<name>.jpg
-https://t01.imx.to/t/<path>/<name>.jpg
-                         ↓
-https://i02.imx.to/i/<path>/<name>.jpg
-```
-
-“Original” means an address matched a supported rule, not that its dimensions or availability have been verified. Extraction does not fetch converted originals. Unmatched source URLs remain available with original matching turned off; they are not classified by resolution. URL deduplication is not image-content deduplication.
-
-Duitang blog images retain their `dtstatic.com` CDN hostname. Matching removes the `x-image-process` preview parameter or a legacy `.thumb.W_H` suffix while preserving other query parameters. Avatars are excluded from this rule.
-
-Website changes, permissions, redirects, and verification pages may prevent conversion or downloading. Support for an image host means supported URL patterns, not every image on that host.
-
-## Download policies
-
-All tasks share a **hard limit of 30 in-flight image transfers**. Each source has its own policy limit and start interval; the same source across several tabs shares those limits.
-
-| Policy | Per-source concurrency | Minimum start interval per source | Minimum global start interval |
-| --- | ---: | ---: | ---: |
-| Low | 5 | 2 s | 250 ms |
-| Medium (default) | 10 | 500 ms | 150 ms |
-| High | 20 | 100 ms | 100 ms |
-| Extra High | 25 | 75 ms | 75 ms |
-| Max | 30 | 50 ms | 50 ms |
-
-Known shards of IMX, Vipr, Pixhost, Imagebam, and Imgbox share a provider budget. Other hosts are separated by URL origin. A single task can use available capacity within these limits; capacity is not multiplied by opening more tabs, and equal sharing is not guaranteed.
-
-HTTP 429 / 503 responses trigger shared cooldown, honor `Retry-After`, and reduce per-source concurrency during recovery. These controls limit request pressure, not bytes per second, and cannot guarantee that a website will not throttle requests. Higher presets have not all been validated against real image hosts. See [download policy details and test scope](docs/download-policy.md).
-
-## Output and recovery
-
-- Archives use the webpage title, with invalid filename characters replaced. Image names use a sequence prefix such as `001_photo.jpeg`.
-- New tasks save the active mode as a single image set. Retries of older tasks retain their original folder paths. Filename extensions are determined from actual image signatures; image bytes are preserved.
-- Partial downloads include a failure report. An all-failed task does not save an empty ZIP.
-- Failed-only retries produce a separate supplementary ZIP and preserve numbering and paths, allowing its contents to be merged with the original archive.
-- Recovery verifies completed cached files before reusing them. It is file-based recovery, not HTTP Range byte-level resume. Cache availability depends on browser storage and a 24-hour retention window.
-- Limits: **2,000 images per ZIP**, **128 MB per image**, **4 GB total image data**. HTML import accepts up to **20 files**, **16 MB each**. Storage quota failures are reported explicitly.
-
-Downloads and ZIP creation stream through browser-local temporary storage instead of buffering the entire collection in memory. Waiting for response headers and response-body stalls have separate timeouts; a slow transfer making progress has no fixed total-duration timeout.
-
-## Permissions and privacy
-
-The default permissions are `activeTab`, `scripting`, and `storage`. Download and website-access permissions are requested when needed. Optional HTTP/HTTPS host patterns allow those requests; they are not an automatic grant of access to every website.
-
-Page extraction and URL conversion run locally without an external extraction service. Previews load source images, and downloads contact the selected image hosts; normal browser and website cookie policies apply. Local HTML import does not execute its scripts or load its iframes. The extension does not bypass website verification.
-
-## Scope and limitations
-
-- Main-frame discovery cannot guarantee access to cross-origin iframes, closed shadow roots, or images that have not loaded.
-- Local HTML cannot reproduce script-generated content or external stylesheet behavior.
-- No server crawler, AI upscaling, content-hash deduplication, image sorting, or guaranteed original-resolution detection.
-- The extension builds and tests independently; it does not require a sibling crawler project or server.
-
-See the [crawler feature comparison](FEATURE_PARITY.md) for the detailed migration boundaries.
+- [Usage guide](docs/usage.md): selection, batches, ZIP output, retries and recovery.
+- [Download policies](docs/download-policy.md): request limits and throttling behavior.
+- [Release notes](docs/release-notes.md).
+- [Report a problem](https://github.com/zenvor/image-extractor-extension/issues): include the extension version, steps to reproduce, expected and actual behavior, and a public page URL when possible. Remove private URLs, cookies and other sensitive data before sharing logs or screenshots.
 
 ## Development
 
-React, TypeScript, WXT, Tailwind CSS, and locally bundled shadcn/ui components.
+Built with React, TypeScript, WXT, Tailwind CSS and shadcn/ui.
 
 ```sh
 npm ci
@@ -138,22 +77,7 @@ npm run build
 npm run check:bundle
 ```
 
-The full test suite includes a local HTTP streaming test and needs permission to listen on loopback. For offline tests without a local listener:
-
-```sh
-npm test -- --exclude tests/archive-network.test.ts --maxWorkers=1
-```
-
-To build a candidate without replacing the usual build directory:
-
-```sh
-node --input-type=module -e 'import { build } from "wxt"; await build({outDir:".output-staged"});'
-EXTENSION_BUILD_DIR=.output-staged/chrome-mv3 npm run check:bundle
-```
-
-Use `npm run icons` to regenerate icons. Original URL rules live in `lib/originalImageResolver.js` and `lib/legacyOriginalRules.js`; update their version and regression fixtures when rules change. Commits, PR titles, and release notes use English; commits follow Conventional Commits.
-
-[Manual Chrome acceptance](docs/release-smoke.md) · [Release notes](docs/release-notes.md) · [Download policy](docs/download-policy.md)
+See the [development guide](docs/development.md) for test requirements, isolated builds and source layout, and [release instructions](docs/releasing.md) for manually authored GitHub Releases and automatic build attachments.
 
 ## License
 
