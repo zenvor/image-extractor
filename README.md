@@ -6,7 +6,7 @@
 
 Image Extractor works with the current webpage, batches of URLs, and saved HTML files. Preview and filter page images, optionally enable original matching, then download a ZIP, copy the selected URLs, or export a link list. Downloads support failed-only retries, cache-based recovery, and five adjustable download policies.
 
-Current version: **0.6.6**. Install as an unpacked Chrome extension using the instructions below.
+Current version: **0.6.7**. Install as an unpacked Chrome extension using the instructions below.
 
 ## Screenshots
 
@@ -19,7 +19,7 @@ Imagery credit: NASA, from the [Artemis II Lunar Flyby gallery](https://www.nasa
 ## Features
 
 - **Image discovery:** Collect `img` / `picture` sources, common lazy-loading attributes, direct image links, and image metadata. Website icons, CSS backgrounds, embedded images, and inline SVG are optional and enabled by default.
-- **Thumbnail-to-original URL matching:** Built-in rules cover supported address patterns on IMX, Imgbox, Pixhost, Vipr, and other image hosts. The default view contains image URLs found on the page. Enable **Match original images** to show only supported matches; no matches produce an empty result.
+- **Thumbnail-to-original URL matching:** Built-in rules cover supported address patterns on IMX, Imgbox, Pixhost, Vipr, Duitang, and other image hosts. The default view contains image URLs found on the page. Enable **Match original images** to show only supported matches; no matches produce an empty result.
 - **Batch URLs and local HTML:** Process up to 20 webpages or HTML files per batch, with per-page results, progress, stop controls, and download outcomes. Local HTML supports an original webpage URL or a valid `<base>` for relative links.
 - **Compact image workspace:** Proportional, uncropped previews; grid/list views; format and text filters; full-selection controls; keyboard navigation; a dark preview background; and preview failure retries. Images retain page discovery order.
 - **ZIP downloads:** Page-title archive names, numbered image filenames, unchanged image bytes, and a single image set for the active mode. Partial success retains downloaded images and includes a failure report.
@@ -79,6 +79,8 @@ https://i02.imx.to/i/<path>/<name>.jpg
 ```
 
 “Original” means an address matched a supported rule, not that its dimensions or availability have been verified. Extraction does not fetch converted originals. Unmatched source URLs remain available with original matching turned off; they are not classified by resolution. URL deduplication is not image-content deduplication.
+
+Duitang blog images retain their `dtstatic.com` CDN hostname. Matching removes the `x-image-process` preview parameter or a legacy `.thumb.W_H` suffix while preserving other query parameters. Avatars are excluded from this rule.
 
 Website changes, permissions, redirects, and verification pages may prevent conversion or downloading. Support for an image host means supported URL patterns, not every image on that host.
 

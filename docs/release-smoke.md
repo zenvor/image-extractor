@@ -1,12 +1,12 @@
 # Manual Chrome acceptance for the first release candidate
 
-Current source version: 0.6.6. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
+Current source version: 0.6.7. Run these checks against the exact built package intended for release. Unit tests and Node HTTP integration tests do not substitute for actual Chrome behavior.
 
 ## Preparation
 
 1. Finish any active downloads before replacing or reloading the installed extension.
 2. Load the verified candidate at `.output-staged/chrome-mv3`, or synchronize it to the existing unpacked installation and reload that installation manually. Do not leave duplicate extension instances enabled.
-3. Confirm version 0.6.6 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
+3. Confirm version 0.6.7 and that Download policy uses the five-step slider. Verify the installed build as well; version text alone does not prove its contents.
 4. From the project root, start the local fixtures: `python3 examples/release-smoke.py`.
 5. Open `http://127.0.0.1:8197` in Chrome. The fixtures use local SVG files, not external image hosts. Request counters distinguish image previews from other requests using Sec-Fetch-Dest; they are diagnostic counts, not measured network concurrency.
 
@@ -26,6 +26,13 @@ Current source version: 0.6.6. Run these checks against the exact built package 
 If a problem occurs, record the scenario, displayed message, ZIP contents, and request counters. Do not mark this checklist passed solely from unit tests or HTTP fixture self-checks.
 
 Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitoring is required.
+
+## Duitang matching acceptance (2026-10-25, version 0.6.7)
+
+- Inspected actual list `img.src`/`currentSrc`, detail preview sources and the detail page's original-image link in Chrome. Both 400px and 1000px previews use `x-image-process`; the original retains the `a-ho-img.dtstatic.com` hostname and path without that parameter.
+- Two source images directly opened and decoded at 2360 × 5120 and 4000 × 4000. All 24 captured list-image URLs passed the resolver check; this is not a claim that every original was fetched or validated.
+- With zero active downloads, synchronized and reloaded 0.6.7. The category popup displayed 24 matched originals and zero selections; its first preview showed the same original URL as the actual detail page.
+- Screenshot and DOM samples were retained locally under the ignored `.output-staged` directory. No new batch ZIP download was started.
 
 ## Manual selection acceptance (2026-10-25, version 0.6.6)
 

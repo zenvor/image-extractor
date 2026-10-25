@@ -1,5 +1,17 @@
 [
   {
+    "input": "https://a-ho-img.dtstatic.com/uploads/blog/202608/13/9WSaW9Pjt8jJPZV.jpg?x-image-process=image/resize,m_fixed,w_400/ignore-error,1",
+    "output": "https://a-ho-img.dtstatic.com/uploads/blog/202608/13/9WSaW9Pjt8jJPZV.jpg"
+  },
+  {
+    "input": "https://a-ho-img.dtstatic.com/uploads/blog/202608/13/9WSaW9Pjt8jJPZV.jpg?x-image-process=image/resize,m_fixed,w_1000/ignore-error,1",
+    "output": "https://a-ho-img.dtstatic.com/uploads/blog/202608/13/9WSaW9Pjt8jJPZV.jpg"
+  },
+  {
+    "input": "https://c-ssl.dtstatic.com/a.thumb.400_0.jpg",
+    "output": "https://c-ssl.dtstatic.com/a.jpg"
+  },
+  {
     "input": "https://image.imx.to/u/t/2026/05/24/landscape.jpg",
     "output": "https://i02.imx.to/i/2026/05/24/landscape.jpg"
   },

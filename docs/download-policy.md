@@ -1,6 +1,6 @@
 # Download policies
 
-Current source version: 0.6.6. Download policies control concurrent image transfers and how frequently new requests may start. They do not set a bandwidth limit or guarantee that a website will accept requests.
+Current source version: 0.6.7. Download policies control concurrent image transfers and how frequently new requests may start. They do not set a bandwidth limit or guarantee that a website will accept requests.
 
 ## Shared limits
 

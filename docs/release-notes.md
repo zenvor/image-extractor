@@ -1,8 +1,15 @@
-# Image Extractor 0.6.6 — First public release candidate
+# Image Extractor 0.6.7 — First public release candidate
 
 Draft release notes. The package is prepared locally; this is not a published release. Full Chrome download acceptance is pending.
 
 Extract webpage images, resolve original URLs from supported thumbnails, and save selected images as ZIP archives.
+
+## Changes in 0.6.7
+
+- Update Duitang blog-image matching for `a-ho-img.dtstatic.com` previews: remove `x-image-process` while preserving the CDN hostname, unrelated query bytes and fragments. Legacy thumbnail suffixes no longer rewrite the hostname to `duitang.com`.
+- Exclude avatars and non-image URLs from this rule. Already-original blog images remain matched, and several previews deduplicate to one original.
+- Bump the resolver version so existing cached results are refreshed.
+- Chrome DOM inspection confirmed the same original links on two actual detail pages. Directly opened originals were 2360 × 5120 and 4000 × 4000; this verifies these examples, not every image on Duitang. README screenshots remain the real 0.6.6 captures documented with them.
 
 ## Changes in 0.6.6
 
@@ -35,7 +42,9 @@ Original matching depends on supported URL patterns and does not verify original
 
 ## Validation
 
-All 380 tests in 21 files pass, including real loopback HTTP/disk-stream checks for continuous transfers, failed-only retry and cancellation recovery. Type checking, candidate production build and production-bundle checks pass. Manager tests cover five pages, independent controllers, shared page reuse, language changes, permission revocation, page unload, and stale snapshot updates.
+All 390 tests in 21 files pass, including real loopback HTTP/disk-stream checks for continuous transfers, failed-only retry and cancellation recovery. Type checking, candidate production build and production-bundle checks pass. Manager tests cover five pages, independent controllers, shared page reuse, language changes, permission revocation, page unload, and stale snapshot updates.
+
+Version 0.6.7 was synchronized and reloaded in Chrome after confirming zero active downloads. On Duitang's wallpaper category page, the popup showed 24 matched originals and zero selections; the first preview's original address exactly matched the detail page's CDN link without processing parameters. All 24 captured list URLs passed the resolver check. Two directly opened originals decoded at 2360 × 5120 and 4000 × 4000. No batch ZIP download was started for this check.
 
 Version 0.6.6 was synchronized and reloaded in Chrome with no active downloads. Real NASA-gallery acceptance verified zero initial selections, individual selection, selecting visible results, clearing selections hidden by a mode change, restoring manual choices and English after reopening, and clearing choices on re-extraction. English and Chinese screenshots are included in the READMEs. No new image download was started during this selection check.
 
