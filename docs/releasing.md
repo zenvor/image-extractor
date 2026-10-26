@@ -20,6 +20,16 @@ Release titles and notes are written manually. The workflow only builds and uplo
 
 The workflow checks out the released commit, verifies the tag against both source version files, installs locked dependencies, runs type checking and the full test suite, builds the extension, checks the production bundle, and verifies the ZIP before uploading. A mismatch fails the job instead of silently changing the source version. Both stable and published pre-releases trigger the workflow, but the tag must still use the numeric version above; prerelease suffixes are not accepted as Chrome manifest versions.
 
+## Write release notes
+
+Write the English release body in `docs/releases/<version>.md` and add a short entry to [release-notes.md](release-notes.md). Use that same authored body on GitHub so the repository and release page agree.
+
+Start with the outcome users gain. Group real changes under a few descriptive headings, give concise first-use or update instructions, and link the version's extension ZIP and checksum. Include meaningful compatibility limits and relevant credits. For later releases, add a comparison link to the previous release.
+
+Keep test logs, local paths, build internals and historical investigation notes in the verification documents. Describe only features included in the tagged package; a later documentation edit does not change a published binary. When editing an existing release, update its notes without moving its tag or replacing its assets.
+
+## Release assets
+
 The ZIP contains `manifest.json` at its root, the built extension files, the project MIT license and bundled third-party notices. Source code, tests, dependencies and credentials are not packaged. The checksum file contains the ZIP filename for use with `sha256sum -c`.
 
 If building or uploading fails, fix the cause and rerun the failed workflow where appropriate. Reruns replace assets with the same filenames; they do not edit release notes. The repository's release immutability setting was verified disabled on 2026-10-25, allowing this publish-first attachment flow. The workflow uses GitHub's built-in token; no additional publishing secret is required.

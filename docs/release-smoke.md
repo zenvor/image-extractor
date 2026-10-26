@@ -51,6 +51,7 @@ Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitor
 
 ## Version 1.0.0 Chrome smoke (2026-10-25)
 
+- Release checks passed all 390 automated tests, type checking, production build, bundle validation and ZIP integrity checks. The initial sandbox denied two loopback HTTP cases; those cases were rerun successfully outside it.
 - Confirmed the existing loaded 0.6.7 manager had 20 historical tasks and zero active downloads before replacement. Backed up the loaded build under the ignored candidate directory, copied the exact candidate files and confirmed Chrome reported Reloaded and version 1.0.0. User task storage was not cleared.
 - On the local normal-download fixture, the actual popup showed three SVG images and zero initial selections. Select all enabled download for exactly three images.
 - Chrome reported the saved ZIP as Done (1,225 bytes). Independently opened that exact saved file, verified ZIP CRC and the three SVG entries: 001_a.svg, 002_b.svg and 003_c.svg.
@@ -60,3 +61,11 @@ Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitor
 - Final 1.0.0 cancellation/recovery: cancelled after four of six files completed, then resumed the same task. Chrome saved a six-SVG ZIP; CRC and SVG content passed. Four completed files were each requested once; only the two interrupted slow files were requested twice.
 - During resumed transfer, page B showed its own one-image result and zero initial selections. Chinese interface preference restored afterward. No active downloads remained.
 - Real NASA-gallery screenshots refreshed from version 1.0.0 in both languages; store dimensions and preparation are documented in store-assets/README.md. Five-page simultaneous transfers and narrow-screen manual checks remain unverified; automated coverage is retained.
+
+## Version 1.1.0 release checks (2026-10-26)
+
+- All 428 automated tests in 22 files, type checking, the isolated production build and production-bundle checks passed. An earlier run hit the existing accelerated timing assertion; the complete rerun passed without changing the assertion.
+- The separate Chrome parser harness passed all eleven provider fixtures and the inert-HTML fixture (12/12). Real saved HTML produced original URLs for Vipr, Pixhost and ImageTwist. This does not establish image-download acceptance for every provider; see [host validation boundaries](hosted-images.md#validation-boundaries).
+- [Release workflow 40243025730](https://github.com/zenvor/image-extractor-extension/actions/runs/40243025730) completed successfully for tag `v1.1.0`, commit `f0a956499033076ca515e7c5bb3b764459a37c0d`.
+- Downloaded the public release ZIP and checked its checksum, all 35 ZIP entries, manifest version 1.1.0 and bundled license notices. Size: 337931 bytes; SHA-256: `d0d8b50e69e96a3b4060f91826ec72eb71c11b07e36c5c8a2f9133f7c51dc361`.
+- The existing installed extension was not reloaded. GitHub publication did not update the previously submitted Chrome Web Store package.
