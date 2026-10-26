@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icons/mark.png" width="96" alt="Image Extractor 图标">
+  <img src="assets/logo-source.svg" width="96" alt="Image Extractor 图标">
 </p>
 
 <h1 align="center">Image Extractor</h1>

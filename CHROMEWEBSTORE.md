@@ -76,6 +76,8 @@ Privacy policy: https://gist.github.com/zenvor/054206a25dc00fe4cf1de693528d2635 
 | Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Current 1.0.0 screenshot prepared as docs/store-assets/screenshot-zh.jpg, 1280×800 |
 | Small promotional tile | docs/store-assets/promo-440x280.png | 440×280, existing icon and name |
 
+Vector artwork update (2026-10-26): `assets/logo-source.svg` reconstructs the earlier PNG design and is now the source for all generated PNG icons. The existing published ZIPs and submitted Store assets still contain the earlier artwork. Before the next Store submission, upload the regenerated 128px icon and refresh the promotional tile and both localized screenshots where the logo appears. This source change does not submit a Store update.
+
 ## Publisher and distribution
 
 Publisher display name currently: luckxiaomi@gmail.com. Publisher ID: 82288fad-14d3-4394-9d40-822576edd142.
