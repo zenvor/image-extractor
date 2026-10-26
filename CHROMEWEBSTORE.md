@@ -72,11 +72,11 @@ Privacy policy: https://gist.github.com/zenvor/054206a25dc00fe4cf1de693528d2635 
 | Asset | Current source | Submission readiness |
 | --- | --- | --- |
 | Icon | public/icons/128.png | Verify PNG dimensions and package presence |
-| English screenshot | docs/screenshots/popup-en.jpg | Current 1.0.0 screenshot prepared as docs/store-assets/screenshot-en.jpg, 1280×800 |
-| Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Current 1.0.0 screenshot prepared as docs/store-assets/screenshot-zh.jpg, 1280×800 |
-| Small promotional tile | docs/store-assets/promo-440x280.png | 440×280, existing icon and name |
+| English screenshot | docs/screenshots/popup-en.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-en.jpg, 1280×800 |
+| Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-zh.jpg, 1280×800 |
+| Small promotional tile | docs/store-assets/promo-440x280.svg | 440×280; generated PNG export available for Store upload |
 
-Vector artwork update (2026-10-26): `assets/logo-source.svg` reconstructs the earlier PNG design and is now the source for all generated PNG icons. The existing published ZIPs and submitted Store assets still contain the earlier artwork. Before the next Store submission, upload the regenerated 128px icon and refresh the promotional tile and both localized screenshots where the logo appears. This source change does not submit a Store update.
+Vector artwork update (2026-10-26): `assets/logo-source.svg` is the single logo source; the earlier PNG source was removed. Both READMEs and the extension interface display SVG directly; manifest PNGs and both promotional tile formats are generated from it. Both localized screenshots were recaptured with the new logo in an isolated candidate preview (see docs/screenshots/README.md for scope). The existing published ZIPs and submitted Store assets still contain the earlier artwork. Review and upload the refreshed assets with the next Store submission; this source change does not submit an update.
 
 ## Publisher and distribution
 

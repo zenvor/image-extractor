@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254">
+  <title>Image Extractor</title>
+  <desc>Two overlapping image cards with white suns and indigo mountains. Editable vector reconstruction of the original PNG artwork.</desc>
+  <defs>
+    <linearGradient id="front-card" x1="114" y1="166" x2="998" y2="1026" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#625fff"/>
+      <stop offset="1" stop-color="#5658ed"/>
+    </linearGradient>
+    <linearGradient id="back-card" x1="760" y1="530" x2="1110" y2="1060" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b9c2ff"/>
+      <stop offset="1" stop-color="#d3d8ff"/>
+    </linearGradient>
+    <linearGradient id="light-mountain" x1="250" y1="620" x2="570" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#cdd2ff"/>
+      <stop offset="1" stop-color="#b9c2ff"/>
+    </linearGradient>
+    <linearGradient id="dark-mountain" x1="630" y1="590" x2="830" y2="1040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3e38b4"/>
+      <stop offset="1" stop-color="#3931a7"/>
+    </linearGradient>
+    <clipPath id="back-clip">
+      <path d="M831 519 1091 565Q1183 581 1166 675L1110 992Q1093 1090 997 1073L738 1027Q644 1011 661 916L717 600Q733 502 831 519Z"/>
+    </clipPath>
+    <clipPath id="front-clip">
+      <rect x="114" y="166" width="884" height="860" rx="164"/>
+    </clipPath>
+  </defs>
+  <g id="back-image" clip-path="url(#back-clip)">
+    <path fill="url(#back-card)" d="M831 519 1091 565Q1183 581 1166 675L1110 992Q1093 1090 997 1073L738 1027Q644 1011 661 916L717 600Q733 502 831 519Z"/>
+    <circle cx="1072" cy="684" r="43" fill="#fff"/>
+    <path fill="#7774ff" d="M710 1040 1041 802Q1069 775 1092 800L1161 882 1131 1053Z"/>
+    <path fill="#4840b9" d="M845 1058 1062 872Q1087 847 1108 871L1150 918 1115 1087Z"/>
+  </g>
+  <g id="front-image" clip-path="url(#front-clip)">
+    <rect x="114" y="166" width="884" height="860" rx="164" fill="url(#front-card)"/>
+    <circle cx="336" cy="389" r="100" fill="#fff"/>
+    <path fill="url(#light-mountain)" d="M114 846 409 566Q464 515 520 567L739 813 515 1050H114Z"/>
+    <path fill="url(#dark-mountain)" d="M262 1026 706 618Q765 565 824 621L998 816V1026Z"/>
+  </g>
+</svg>

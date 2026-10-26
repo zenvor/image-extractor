@@ -16,6 +16,8 @@
 
 ![Chrome 中的图片预览、筛选和手动选图界面](docs/store-assets/screenshot-zh.jpg)
 
+使用 NASA 图像的界面预览。[截图说明](docs/screenshots/README.md)。
+
 ## 功能
 
 - **先预览，再下载：** 网格或列表浏览图片，按格式与文字筛选，选择需要保存的内容。

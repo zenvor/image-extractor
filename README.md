@@ -16,6 +16,8 @@
 
 ![Image preview, filters and manual selection in Chrome](docs/store-assets/screenshot-en.jpg)
 
+Interface preview with NASA images. [Screenshot details](docs/screenshots/README.md).
+
 ## Features
 
 - **Browse before downloading.** Preview page images in a grid or list, search and filter by format, then choose what to save.
