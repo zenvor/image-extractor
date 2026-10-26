@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icons/mark.png" width="96" alt="Image Extractor 图标">
+  <img src="assets/logo-source.svg" width="96" alt="Image Extractor 图标">
 </p>
 
 <h1 align="center">Image Extractor</h1>
@@ -15,6 +15,8 @@
 </p>
 
 ![Chrome 中的图片预览、筛选和手动选图界面](docs/store-assets/screenshot-zh.jpg)
+
+使用 NASA 图像的界面预览。[截图说明](docs/screenshots/README.md)。
 
 ## 功能
 
