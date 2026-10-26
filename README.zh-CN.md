@@ -66,7 +66,7 @@ npm run build
 
 ## 原图支持
 
-- **论坛页面：** ViperGirls（`vipergirls.to`）及可访问的镜像，包括 `viperproxy.org`。
+- **论坛页面：** ViperGirls（`vipergirls.to`）及可访问的备用域名或镜像，包括 [`viper.to`](https://viper.to/) 和 `viperproxy.org`。
 - **外链图床：** IMX、Imgbox、Vipr、Pixhost、ImageBam、Imagevenue、TurboImageHost、Acidimg、ImageTwist、Imgspice、Postimages / Pixxxels。
 - **其他地址规则：** 堆糖及其他已适配的缩略图格式，详见[原图匹配说明](docs/usage.zh-CN.md#原图匹配说明)。
 

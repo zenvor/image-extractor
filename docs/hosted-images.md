@@ -26,9 +26,11 @@ Imagezilla, PimpAndHost and Pixroute appear in the forum's list but were not fou
 
 ## Forum and page coverage
 
-- **ViperGirls (`vipergirls.to`) and its browser-accessible mirrors, such as the user-provided `viperproxy.org`:** read image elements and their enclosing links on the currently loaded page. You must open the page and complete login or website verification yourself.
+- **ViperGirls (`vipergirls.to`) and its browser-accessible alternate domains or mirrors, including [`viper.to`](https://viper.to/) and the user-provided `viperproxy.org`:** read image elements and their enclosing links on the currently loaded page. You must open the page and complete login or website verification yourself.
 - **Batch URLs and imported HTML:** use the same extraction and image-host rules. Imported HTML needs a usable original URL or base for relative links. Open the result workspace and enable original matching to resolve its recognized detail links.
 - The lookup is based on the external image host and supported URL format, so it can work on another forum using those same links. That does not establish tested compatibility with every forum.
+
+`viper.to` served the ViperGirls forum when checked on 2026-10-26. The VRipper project's [alternate-domain report](https://github.com/dev-claw/vripper-project/issues/270) also identifies it as another domain for the same board. Domain availability depends on the website and your network. This confirms an alternate access address, not an end-to-end download test on every listed domain or image host.
 - This feature does not use the forum's `vr.php` API, auto-like posts, collect all pages of a thread, or crawl subforums. It does not enumerate images from an image-host gallery URL; it resolves individual images linked by page thumbnails.
 
 ## How it works

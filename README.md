@@ -66,7 +66,7 @@ For batch URLs, HTML import, selection rules and recovery, see the [user guide](
 
 ## Supported originals
 
-- **Forum pages:** ViperGirls (`vipergirls.to`) and accessible mirrors, including `viperproxy.org`.
+- **Forum pages:** ViperGirls (`vipergirls.to`) and accessible alternate domains or mirrors, including [`viper.to`](https://viper.to/) and `viperproxy.org`.
 - **External image hosts:** IMX, Imgbox, Vipr, Pixhost, ImageBam, Imagevenue, TurboImageHost, Acidimg, ImageTwist, Imgspice, and Postimages / Pixxxels.
 - **Other URL rules:** Duitang and additional supported thumbnail formats; see the [original-matching guide](docs/usage.md#original-url-matching).
 
