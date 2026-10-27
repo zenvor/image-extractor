@@ -1,4 +1,5 @@
 import type { AnalysisState } from './types';
+import { popupViewKey } from './popupViewState';
 
 export const ANALYSIS_KEY = 'analysis'; // Read older installations without losing their current page.
 export const analysisKey = (tabId: number) => `${ANALYSIS_KEY}:${tabId}`;
@@ -27,6 +28,7 @@ export async function saveAnalysis(state: AnalysisState) {
 
 export async function clearAnalysis(tabId: number) {
   await chrome.storage.session.remove(analysisKey(tabId));
+  await chrome.storage.session.remove(popupViewKey(tabId));
   const legacy = (await chrome.storage.session.get(ANALYSIS_KEY))[ANALYSIS_KEY] as AnalysisState | undefined;
   if (legacy?.tabId === tabId) await chrome.storage.session.remove(ANALYSIS_KEY);
 }

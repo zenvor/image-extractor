@@ -84,7 +84,7 @@ function SingleTask() {
       <div className="archive-state mb-4 flex items-center gap-2 text-sm text-brand-strong" data-tone={error ? 'destructive' : feedback?.tone}>{saved && !feedback?.warning ? <Check size={19} /> : active ? <LoaderCircle size={19} className="animate-spin" /> : <AlertCircle size={19} />}<span>{error ? t("下载未完成") : feedback?.title || t("读取下载任务…")}</span></div>
       <h2 className="task-heading">{batch?.filename || t("下载任务")}</h2>
       <p className="task-description">{active ? ownsTask ? t("可以关闭插件弹窗，请保持本任务页打开。") : t("下载正在另一个任务页中进行，请前往该页查看或取消。") : saved ? t("按三位序号排列，可以直接解压查看。") : canResumeArchive(batch) ? t("缓存保留 24 小时；继续下载会核验并复用已完成图像。") : t("从插件弹窗重新选择图像后，可再次发起下载。")}</p>
-      {active && <p className="mb-4 text-xs text-muted-foreground">{translateMessage(DOWNLOAD_SPEEDS[speed].label)}: {translateMessage(DOWNLOAD_SPEEDS[speed].description)}{t("。所有任务共享总并发上限，各图像来源独立计时；限流后自动等待并降档，稳定成功后逐步恢复。可在插件左侧“下载策略”切换。")}</p>}
+      {active && <p className="mb-4 text-xs text-muted-foreground">{translateMessage(DOWNLOAD_SPEEDS[speed].label)}: {translateMessage(DOWNLOAD_SPEEDS[speed].description)}{t("。所有任务共享总并发上限，各图像来源独立计时；限流后自动等待并降档，稳定成功后逐步恢复。可在插件左侧“下载速度”切换。")}</p>}
       <div className="task-counts"><div><strong>{total}</strong><span>{t("选中图像")}</span></div><div><strong>{completed}</strong><span>{t("已获取图像")}</span></div><div><strong className={failed.length ? 'text-warning-foreground' : ''}>{failed.length}</strong><span>{t("失败图像")}</span></div></div>
       <ArchiveProgress feedback={feedback} status={batch?.status} />
       <div className="mt-2"><ArchiveProgressLegend /></div>

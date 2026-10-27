@@ -18,11 +18,11 @@
 | 动态滚动：runner/lib/pageLoader.js | scrollPage.ts | 用户主动触发，最多十步，恢复位置；不是无限滚动爬取 |
 | 原图/全部、去重与顺序 | selection.ts、imageAddressPlan.js | 默认页面图像；原图匹配改为可选开关，无命中时不回退；URL去重，不冒充内容哈希去重 |
 | 透明背景检查：web/src/components/ImageGrid.vue | 深色图片背景菜单 | 仅图片容器变色，现有布局不变 |
-| 搜索、格式、多选、网格/列表、预览 | popup、ImageList、ImagePreview | 已有；大量图片使用虚拟列表替代Web分页 |
+| 搜索、格式、多选、网格/列表、缩略图 | popup、ImageList、ImageThumbnail | 每页最多20张；当前页卡片一次渲染，仅图片懒加载；最近3页复用图片状态；跨页保留勾选；不提供放大预览弹窗 |
 | 多URL：runner/cli/inputs.js | tools.html | 明确输入、最多20页、逐页分析、可选滚动加载、按需授权；每页独立ZIP和任务；辅助页跟踪结果和汇总 |
 | 本地HTML：runner/lib/imageExtractor.js | tools.html、collectPage(imported) | 主动选择最多20文件，单文件16MB；不执行脚本，仅读现有地址；支持无来源 URL 时 HTML 内的绝对 base；停止不再提交下一文件；报告无法解析的相对地址，支持补充基准地址后单文件重试、名称及修改时间排序 |
-| ZIP、文件名：runner/lib/fileManager.js | archive.ts、outputNaming.js | 三位序号+原文件名、网页标题ZIP保留；chpic 响应头命名及透明/白底前缀；单图按钮仍沿用ZIP契约 |
-| 重试、并发、失败清单、取消 | archive.ts | 五档滑块（低/中等/高/极高/超高），跨任务全局上限30、来源额度5/10/20/25/30及启动间隔，429/503冷却；单图额外重试一次，未复制CLI所有调优参数 |
+| ZIP、文件名：runner/lib/fileManager.js | archive.ts、downloads.ts、outputNaming.js | 多图保留三位序号+原文件名、网页标题ZIP、chpic响应头命名；卡片单图和仅选一张时直接保存图片，由Chrome处理远程文件名和类型，内嵌图像生成安全文件名 |
+| 重试、并发、失败清单、取消 | archive.ts | 五档分段选择（低/中/高/极高/超高），跨任务全局上限30、来源额度5/10/20/25/30及启动间隔，429/503冷却；ZIP 内每个图像请求失败后额外重试一次；原生单图下载由 Chrome 管理，未复制CLI所有调优参数 |
 | 仅重试失败项 | archiveState.ts、requestArchiveRetry.ts | 已有；保留原编号、补充ZIP、成功项不请求 |
 | 中断恢复：runner/lib/downloadLedger.js | archive.ts、archiveState.ts | 新增24小时OPFS缓存恢复，核验已记录完成文件大小/格式；损坏缓存重下 |
 | 复制链接、TXT | popup菜单 | 已有增强 |

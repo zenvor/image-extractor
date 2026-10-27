@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
-import { act } from 'react';
+import { act, Profiler } from 'react';
 import { setLanguagePreference } from '../lib/i18n';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../entrypoints/popup/App';
 import type { AnalysisState, ArchiveBatch, Request } from '../lib/types';
 import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../lib/extractionVersion';
+import { toast } from '../components/ui/sonner';
+import { loadPopupSnapshot } from '../entrypoints/popup/bootstrap';
 
 vi.mock('../lib/downloadSpeed', async importOriginal => ({
   ...await importOriginal<typeof import('../lib/downloadSpeed')>(),
@@ -28,6 +30,7 @@ let container: HTMLDivElement;
 let send: ReturnType<typeof vi.fn>;
 let request: ReturnType<typeof vi.fn>;
 let local: Record<string, unknown>;
+let popupSession: Record<string, unknown>;
 type StorageListener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => void;
 let listeners: Set<StorageListener>;
 function changed(value: AnalysisState) {
@@ -36,16 +39,37 @@ function changed(value: AnalysisState) {
 }
 async function mount() {
   await act(async () => { root = createRoot(container); root.render(<App />); });
+  await flushToasts();
+}
+async function flushToasts() {
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 }
 async function click(selector: string) {
   const element = container.querySelector<HTMLButtonElement>(selector);
   expect(element, selector).not.toBeNull();
   await act(async () => { element!.click(); });
+  await flushToasts();
 }
 async function chooseAction(selector: string) {
   const item = document.querySelector<HTMLElement>(selector);
   expect(item).not.toBeNull();
   await act(async () => { item!.click(); });
+  await flushToasts();
+}
+async function openMore() {
+  const trigger = container.querySelector<HTMLButtonElement>('.more-actions-button')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  expect(document.querySelector('[role=menu]')).not.toBeNull();
+}
+async function openExtractionOptions() {
+  const trigger = container.querySelector<HTMLButtonElement>('.collection-options-trigger')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await flushToasts();
+  expect(document.querySelector('.collection-options[role=menu]')).not.toBeNull();
+}
+async function chooseMoreAction(selector: string) {
+  await openMore();
+  await chooseAction(selector);
 }
 async function search(value: string) {
   const input = container.querySelector<HTMLInputElement>('input[type=search]')!;
@@ -63,12 +87,14 @@ async function chooseType(label: string) {
   if (control.getAttribute('aria-checked') !== String(checked)) await click('.original-mode-switch');
 }
 beforeEach(() => {
-  analysis = fixture(); local = {}; listeners = new Set();
+  analysis = fixture(); local = {}; popupSession = {}; listeners = new Set();
   container = document.createElement('div'); document.body.append(container);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   request = vi.fn(async () => true);
   send = vi.fn(async (message: Request) => {
+    if (message.type === 'LOAD_POPUP_VIEW') return { ok: true, view: popupSession['popupView:' + message.tabId] };
+    if (message.type === 'SAVE_POPUP_VIEW') await chrome.storage.session.set({ ['popupView:' + message.tabId]: message.view });
     if (message.type === 'SELECT' && analysis) changed({ ...analysis, selected: message.selected, selectionMode: message.mode || 'custom', selectionFilter: message.filter || analysis.selectionFilter });
     if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh', selected: [], selectionFilter: message.mode === 'large' ? 'large' : 'page' });
     return { ok: true };
@@ -76,7 +102,7 @@ beforeEach(() => {
   vi.stubGlobal('chrome', {
     tabs: { query: async () => [{ id: 7, url: 'https://example.org/gallery', title: '测试图集' }], update: vi.fn(async () => ({ id: 99 })), create: vi.fn(async () => ({ id: 100 })) },
     storage: {
-      session: { get: async () => ({ analysis }) }, local: { get: async () => local, set: async (values: Record<string, unknown>) => Object.assign(local, values) },
+      session: { get: async () => ({ analysis, ...popupSession }), set: async (values: Record<string, unknown>) => { Object.assign(popupSession, structuredClone(values)); } }, local: { get: async () => local, set: async (values: Record<string, unknown>) => Object.assign(local, values) },
       onChanged: { addListener: (listener: StorageListener) => listeners.add(listener), removeListener: (listener: StorageListener) => listeners.delete(listener) },
     },
     runtime: { sendMessage: send, getURL: (path: string) => 'chrome-extension://test' + path }, permissions: { request },
@@ -95,6 +121,197 @@ it('automatically reads a new page once and reuses a matching cached analysis', 
   await act(async () => root!.unmount()); root = undefined;
   await mount();
   expect(send.mock.calls.filter(([message]) => message.type === 'ANALYZE')).toHaveLength(1);
+});
+it('never commits a fake extracting or zero-image frame while restoring a delayed cache', async () => {
+  let finish!: (value: Record<string, unknown>) => void;
+  const cached = new Promise<Record<string, unknown>>(resolve => { finish = resolve; });
+  chrome.storage.session.get = vi.fn(() => cached) as typeof chrome.storage.session.get;
+  const frames: { busy: string | null; count: string | null; emptyFormats: boolean }[] = [];
+  await act(async () => {
+    root = createRoot(container);
+    root.render(<Profiler id="popup" onRender={() => {
+      if (container.querySelector('.gallery')) frames.push({
+        busy: container.querySelector('.gallery')!.getAttribute('aria-busy'),
+        count: container.querySelector('.visible-count')?.textContent || null,
+        emptyFormats: !!container.querySelector('.format-empty'),
+      });
+    }}><App /></Profiler>);
+  });
+  expect(container.querySelector('.refresh-button')).toBeNull();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  await act(async () => { finish({ analysis }); });
+  expect(frames.length).toBeGreaterThan(0);
+  expect(frames.every(frame => frame.busy === 'false' && frame.count === '3 张原图' && !frame.emptyFormats)).toBe(true);
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+});
+it('renders a preloaded cache and saved controls in its very first workspace frame', async () => {
+  local = { imageView: 'list', downloadSpeed: 'high', collectOptions: { icons: false, css: false, inline: false } };
+  const initialSnapshot = await loadPopupSnapshot();
+  const frames: string[] = [];
+  await act(async () => {
+    root = createRoot(container);
+    root.render(<Profiler id="popup" onRender={() => { frames.push(container.innerHTML); }}><App initialSnapshot={initialSnapshot} /></Profiler>);
+  });
+  expect(frames[0]).toContain('3 张原图');
+  expect(frames[0]).not.toContain('正在读取页面');
+  expect(frames[0]).not.toContain('暂无图像类型');
+  expect(frames[0]).toContain('data-view="list"');
+  expect(frames[0]).toContain('20 并发');
+  expect(frames[0]).toContain('仅页面图像');
+  expect(frames[0]).not.toContain('全部启用');
+});
+it.each(['done', 'running'] as const)('reconciles an extraction that became %s after a bootstrap cache miss', async status => {
+  analysis = undefined;
+  const snapshot = await loadPopupSnapshot();
+  expect(snapshot.shouldAnalyze).toBe(true);
+  analysis = { ...fixture(), status };
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await flushToasts();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  expect(analysis.job).toBe('test');
+  if (status === 'done') expectDownloadCount(3);
+  else expect(container.querySelector('.gallery')?.getAttribute('aria-busy')).toBe('true');
+});
+it('ignores a late mismatched analysis event without erasing the current selection', async () => {
+  await mount();
+  await act(async () => { changed({ ...fixture(), job: 'other-page', url: 'https://example.org/other' }); });
+  expectDownloadCount(3);
+  expect(container.querySelectorAll('.image-item')).toHaveLength(3);
+});
+it('reconciles an archive completed between bootstrap and event subscription', async () => {
+  const batch: ArchiveBatch = { id: 'gap', sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  local['archiveBatch:gap'] = batch;
+  chrome.storage.local.get = vi.fn(async () => structuredClone(local)) as typeof chrome.storage.local.get;
+  const snapshot = await loadPopupSnapshot();
+  local['archiveBatch:gap'] = { ...batch, status: 'complete' };
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await flushToasts();
+  expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(false);
+});
+it('lets a newer extraction event win over the bootstrap refresh read', async () => {
+  analysis = undefined;
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  chrome.storage.session.get = vi.fn(() => new Promise<Record<string, unknown>>(resolve => { finish = resolve; })) as typeof chrome.storage.session.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await act(async () => { changed(fixture()); finish({}); });
+  await flushToasts();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  expectDownloadCount(3);
+  expect(container.querySelector('.gallery')?.getAttribute('aria-busy')).toBe('false');
+});
+it.each(['complete', 'removed'] as const)('does not overwrite an archive %s event with an older refresh snapshot', async outcome => {
+  const batch: ArchiveBatch = { id: 'refresh-race', sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  const key = 'archiveBatch:refresh-race';
+  local[key] = batch;
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  chrome.storage.local.get = vi.fn(async keys => keys === null
+    ? new Promise<Record<string, unknown>>(resolve => { finish = resolve; }) : local) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  const notify = vi.spyOn(toast, 'success');
+  await act(async () => {
+    for (const listener of listeners) listener({ [key]: { newValue: outcome === 'complete' ? { ...batch, status: 'complete' } : undefined } }, 'local');
+    finish({ [key]: batch });
+  });
+  await flushToasts();
+  expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(false);
+  expect(notify).toHaveBeenCalledTimes(outcome === 'complete' ? 1 : 0);
+});
+it('reports the resumed task outcome without replaying a newer historical failure', async () => {
+  const base = { sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  const resumed: ArchiveBatch = { ...base, id: 'old-resumed', started: 100, launched: Date.now(), status: 'fetching' };
+  const historical: ArchiveBatch = { ...base, id: 'later-failure', started: 200, status: 'failed', message: 'Old failure' };
+  local['archiveBatch:old-resumed'] = resumed;
+  local['archiveBatch:later-failure'] = historical;
+  await mount();
+  const success = vi.spyOn(toast, 'success');
+  const error = vi.spyOn(toast, 'error');
+  await act(async () => { for (const listener of listeners) listener({ 'archiveBatch:old-resumed': { newValue: { ...resumed, status: 'complete' } } }, 'local'); });
+  await flushToasts();
+  expect(error).not.toHaveBeenCalled();
+  expect(success).toHaveBeenCalledOnce();
+});
+it('dispatches the latest position before closing even when an earlier save is pending', async () => {
+  await mount();
+  send.mockImplementation(message => message.type === 'SAVE_POPUP_VIEW' ? new Promise(() => {}) : Promise.resolve({ ok: true }));
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 100; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => { scroller.scrollTop = 385; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => root!.unmount()); root = undefined;
+  const writes = send.mock.calls.map(([message]) => message).filter(message => message.type === 'SAVE_POPUP_VIEW');
+  expect(writes.at(-1)).toMatchObject({ type: 'SAVE_POPUP_VIEW', view: { gallery: { scrollTop: 385 } } });
+});
+it('restores the last position when reopened inside the worker coalescing window', async () => {
+  const { persistPopupView, readSavedPopupView } = await import('../lib/popupViewPersistence');
+  const originalSend = send.getMockImplementation() as (message: Request) => Promise<{ ok: boolean }>;
+  send.mockImplementation(async message => {
+    if (message.type === 'SAVE_POPUP_VIEW') { await persistPopupView(message.tabId, message.view); return { ok: true }; }
+    if (message.type === 'LOAD_POPUP_VIEW') return { ok: true, view: await readSavedPopupView(message.tabId, message.job) };
+    return originalSend(message);
+  });
+  await mount();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)); });
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 385; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => root!.unmount()); root = undefined;
+  await mount();
+  expect(container.querySelector<HTMLDivElement>('.image-list')?.scrollTop).toBe(385);
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)); });
+  expect(popupSession['popupView:7']).toMatchObject({ gallery: { scrollTop: 385 } });
+});
+it('restores search, type exclusions, background, page and scroll position after closing the popup', async () => {
+  analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index, url: `https://images.example/photo-${index}.${index === 0 ? 'png' : 'jpg'}` })), selected: ['20'], total: 53 };
+  await mount();
+  await search('photo');
+  await click('.format-filter[data-format="PNG"]');
+  await click('.preview-background-control [role="checkbox"]');
+  await click('[aria-label="下一页"]');
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 385; scroller.dispatchEvent(new Event('scroll')); });
+  await flushToasts();
+  expect(popupSession['popupView:7']).toMatchObject({ query: 'photo', excludedFormats: ['PNG'], darkPreview: true, gallery: { page: 1, scrollTop: 385 } });
+  await act(async () => root!.unmount()); root = undefined;
+  await mount();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('photo');
+  expect(container.querySelector('.format-filter[data-format="PNG"]')?.getAttribute('aria-pressed')).toBe('false');
+  expect(container.querySelector('.preview-background-control [role="checkbox"]')?.getAttribute('aria-checked')).toBe('true');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('2 / 3');
+  expect(container.querySelector<HTMLDivElement>('.image-list')?.scrollTop).toBe(385);
+  expectDownloadCount(1);
+});
+it('ignores view state from a different extraction and tolerates an unavailable view cache', async () => {
+  popupSession['popupView:7'] = { job: 'older-job', query: 'missing', excludedFormats: ['JPG'], darkPreview: true };
+  chrome.storage.session.set = vi.fn().mockRejectedValue(new Error('storage unavailable'));
+  await mount();
+  expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('');
+  expect(container.querySelectorAll('.image-item')).toHaveLength(3);
+  expect(container.querySelector('.preview-background-control [role="checkbox"]')?.getAttribute('aria-checked')).toBe('false');
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+});
+it('does not cover an already decoded browser-cached thumbnail with a loading skeleton', async () => {
+  vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+  vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(200);
+  await mount();
+  expect(container.querySelectorAll('.image-item img')).toHaveLength(3);
+  expect(container.querySelector('.thumbnail-loading')).toBeNull();
+});
+it('reuses an empty result and an in-flight extraction instead of starting another on reopen', async () => {
+  for (const status of ['done', 'running'] as const) {
+    analysis = { ...fixture(), status, results: [], selected: [], total: 0 };
+    await mount();
+    expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+    await act(async () => root!.unmount()); root = undefined;
+  }
+});
+it('discards the saved view when the user explicitly extracts again', async () => {
+  await mount();
+  await search('海岸线');
+  await click('.refresh-button');
+  expect(send).toHaveBeenCalledWith({ type: 'ANALYZE', tabId: 7, mode: 'large' });
+  expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('');
+  expect(popupSession['popupView:7']).toMatchObject({ job: 'fresh', query: '', excludedFormats: [], gallery: { page: 0, scrollTop: 0 } });
 });
 it('shows only page URLs by default and switches to matched originals without combining the two', async () => {
   analysis = { ...fixture(), selected: ['S0', 'S1', 'S2'], selectionMode: 'custom', selectionFilter: 'page' };
@@ -129,7 +346,8 @@ it('does not include hidden converted URLs in page-mode copy or download', async
   await click('.copy-links-button');
   expect(writeText).toHaveBeenCalledWith(results.find(item => item.id === 'S0')!.url);
   await click('.zip-button');
-  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['S0'] });
+  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD', job: 'test', selected: ['S0'] });
+  expect(request).toHaveBeenCalledWith({ permissions: ['downloads'] });
 });
 it('restores the returned analysis even when no storage event arrives', async () => {
   analysis = undefined;
@@ -217,7 +435,8 @@ it('cancel all clears hidden choices while preserving displayed images, search a
   await act(async () => root!.unmount()); root = undefined;
   await mount();
   expectDownloadCount(0);
-  expect(container.querySelectorAll('.image-item')).toHaveLength(3);
+  expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('海岸线');
+  expect(container.querySelectorAll('.image-item')).toHaveLength(1);
 });
 it('can cancel every selection even when the current search has no results', async () => {
   await mount();
@@ -253,6 +472,7 @@ it('filters several formats without losing hidden selections and resets an empty
   await click('.format-filter[data-format=SVG]');
   expect([...container.querySelectorAll('.image-item')].map(item => item.querySelector('.format-badge')?.textContent)).toEqual(['PNG', 'JPG']);
   expect(container.querySelector('.format-filter[data-format=SVG]')?.getAttribute('aria-pressed')).toBe('false');
+  expect(container.querySelector('.sidebar-group-heading button')).toBeNull();
   expectDownloadCount(3);
   await click('#image-L0');
   await click('#image-L1');
@@ -289,25 +509,17 @@ it('selects from card padding and toggles a label exactly once', async () => {
   expect(analysis!.selected).toEqual(['L1', 'L2']);
   await click('.image-detail');
   expect(new Set(analysis!.selected)).toEqual(new Set(['L0', 'L1', 'L2']));
-  const selectedAfterToggle = [...analysis!.selected];
-  await click('.item-preview');
-  expect(analysis!.selected).toEqual(selectedAfterToggle);
 });
-it('opens thumbnail preview without toggling selection and persists list view', async () => {
+it('selects thumbnails without opening a preview dialog and persists list view', async () => {
   await mount();
-  const opener = container.querySelector<HTMLElement>('.item-preview')!;
-  opener.focus();
-  await click('.item-preview');
-  expect(document.querySelector('[role="dialog"][aria-labelledby="preview-title"]')).not.toBeNull();
-  expect(document.querySelector('#preview-url')?.getAttribute('value')).toBe(results[0]!.url);
-  expect(document.querySelector('.thumbnail-full img')?.getAttribute('src')).toBe(results[0]!.source);
-  expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
-  await chooseAction('[aria-label="关闭预览"]');
-  expect(document.querySelector('[role="dialog"][aria-labelledby="preview-title"]')).toBeNull();
-  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
-  expect(document.activeElement).toBe(opener);
+  expect(container.querySelector('.item-preview')).toBeNull();
+  await click('.thumbnail img');
+  expect(analysis!.selected).toEqual(['L1', 'L2']);
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
   await click('[aria-label="列表视图"]');
   expect(local.imageView).toBe('list');
+  expect(container.querySelector('.image-list')?.getAttribute('data-view')).toBe('list');
+  expect(analysis!.selected).toEqual(['L1', 'L2']);
 });
 it('requests permission from the click before starting a ZIP with the chosen images', async () => {
   await mount();
@@ -326,14 +538,16 @@ it('copies one card URL without altering the batch selection', async () => {
   expect(send.mock.calls.some(([message]) => message.type === 'SELECT')).toBe(false);
   expect(container.textContent).toContain('已复制 1 个图像链接');
 });
-it('downloads just one card through the existing ZIP job without changing selection', async () => {
+it('downloads one card directly without changing selection or requesting host access', async () => {
   await mount();
   await click('.item-download');
-  expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://images.example/*'] });
-  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['L0'] });
+  expect(request).toHaveBeenCalledWith({ permissions: ['downloads'] });
+  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD', job: 'test', selected: ['L0'] });
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
-  const zipCall = send.mock.calls.findIndex(([message]) => message.type === 'DOWNLOAD_ZIP');
-  expect(request.mock.invocationCallOrder[0]!).toBeLessThan(send.mock.invocationCallOrder[zipCall]!);
+  const downloadCall = send.mock.calls.findIndex(([message]) => message.type === 'DOWNLOAD');
+  expect(request.mock.invocationCallOrder[0]!).toBeLessThan(send.mock.invocationCallOrder[downloadCall]!);
+  expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('已发起图片下载');
+  expect(container.querySelector('.item-download')?.getAttribute('title')).toBe('直接下载这张图像');
 });
 it('loads only the page thumbnail and never presents its size as original resolution', async () => {
   await mount();
@@ -341,8 +555,7 @@ it('loads only the page thumbnail and never presents its size as original resolu
   Object.defineProperties(image, { naturalWidth: { value: 16 }, naturalHeight: { value: 16 } });
   await act(async () => { image.dispatchEvent(new Event('load')); });
   expect(container.querySelector('.thumbnail-dimensions')).toBeNull();
-  expect(container.querySelector('.item-preview')?.textContent).toBe('');
-  expect(container.querySelector('.item-preview')?.getAttribute('title')).toBe('预览图像');
+  expect(container.querySelector('.item-preview')).toBeNull();
   expect(image.getAttribute('src')).toBe(results[0]!.source);
   expect(image.closest('.thumbnail')?.querySelector('.thumbnail-loading')).toBeNull();
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
@@ -352,19 +565,100 @@ it('leaves no live storage listener after the popup closes', async () => {
   await act(async () => root!.unmount()); root = undefined;
   expect(listeners.size).toBe(0);
 });
-it('keeps a thousand-image grid bounded and reaches the last image from the keyboard', async () => {
+it('paginates a thousand images in complete 20-card pages and keeps keyboard navigation', async () => {
   analysis = { ...fixture(), results: Array.from({ length: 1000 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index })), selected: ['0'], total: 1000 };
   await mount();
-  expect(container.querySelectorAll('.image-item').length).toBeLessThanOrEqual(15);
-  const first = container.querySelector<HTMLButtonElement>('#image-0')!;
-  first.focus();
-  await act(async () => { first.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
+  const activeCards = () => container.querySelectorAll('.image-cards[data-visible=true] .image-item');
+  expect(activeCards()).toHaveLength(20);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 50');
+  expect(container.querySelector('.results-count-group .image-pagination')).not.toBeNull();
+  expect(container.querySelectorAll('.image-pagination button')).toHaveLength(2);
+  expect(container.querySelector('.image-gallery > .image-pagination')).toBeNull();
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="上一页"]')?.disabled).toBe(true);
+  container.querySelector<HTMLButtonElement>('#image-0')!.focus();
+  await act(async () => { container.querySelector('#image-0')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
   await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
   expect(document.activeElement?.id).toBe('image-999');
-  expect(container.querySelector('#image-0')).toBeNull();
-  expect(container.querySelectorAll('.image-item').length).toBeLessThanOrEqual(15);
+  expect(activeCards()).toHaveLength(20);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('50 / 50');
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="下一页"]')?.disabled).toBe(true);
   await click('#image-999');
   expect(analysis!.selected).toEqual(['0', '999']);
+});
+
+it.each(['grid', 'list'])('keeps all current-page cards mounted while scrolling and reuses recent pages in %s view', async view => {
+  analysis = { ...fixture(), results: Array.from({ length: 1000 }, (_, index) => ({ ...results[0]!, id: String(index), source: `https://images.example/thumb/${index}.jpg` })), selected: [], total: 1000 };
+  local.imageView = view;
+  await mount();
+  const firstCard = container.querySelector<HTMLElement>('.image-item')!;
+  const image = firstCard.querySelector<HTMLImageElement>('img')!;
+  const initialCards = [...container.querySelectorAll('.image-item')];
+  expect(initialCards).toHaveLength(20);
+  expect([...container.querySelectorAll('.image-item img')].every(img => img.getAttribute('loading') === 'lazy')).toBe(true);
+  await act(async () => { image.dispatchEvent(new Event('load')); });
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 3000; scroller.dispatchEvent(new Event('scroll')); });
+  expect([...container.querySelectorAll('.image-item')]).toEqual(initialCards);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 50');
+  await click('[aria-label="下一页"]');
+  expect(scroller.scrollTop).toBe(0);
+  expect(container.querySelector('.image-cards[data-page="1"]')?.getAttribute('style')).toContain('display: none');
+  await click('[aria-label="上一页"]');
+  expect(container.querySelector('.image-cards[data-visible=true] img')).toBe(image);
+  expect(firstCard.querySelector('.thumbnail-loading')).toBeNull();
+  for (let page = 0; page < 3; page++) await click('[aria-label="下一页"]');
+  expect(container.querySelectorAll('.image-cards')).toHaveLength(3);
+  expect(container.querySelectorAll('.image-item')).toHaveLength(60);
+  expect(container.contains(image)).toBe(false);
+});
+
+it('preserves cross-page selections and applies select-all to all filtered images', async () => {
+  analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), label: 'image-' + index })), selected: [], total: 53 };
+  await mount();
+  await click('#image-0');
+  await click('[aria-label="下一页"]');
+  await click('#image-20');
+  await click('[aria-label="下一页"]');
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(13);
+  await click('#image-52');
+  expect(analysis!.selected).toEqual(['0', '20', '52']);
+  expectDownloadCount(3);
+  await click('[aria-label="列表视图"]');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('3 / 3');
+  await click('.select-all-button');
+  expect(analysis!.selected).toHaveLength(53);
+  expectDownloadCount(53);
+  await search('image-0');
+  expect(container.querySelectorAll('.image-item')).toHaveLength(1);
+  expect(container.querySelector('.image-pagination')).toBeNull();
+  expect(analysis!.selected).toHaveLength(53);
+  await search('');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 3');
+});
+
+it('returns to the first page when a type filter changes the displayed results', async () => {
+  analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), url: `https://images.example/image-${index}.${index % 2 ? 'jpg' : 'png'}` })), selected: [], total: 53 };
+  await mount();
+  await click('[aria-label="下一页"]');
+  await click('[aria-label="下一页"]');
+  await click('.format-filter[data-format=JPG]');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 2');
+  expect(container.querySelector('.image-page-summary')?.getAttribute('aria-label')).toBe('第 1 页，共 2 页');
+  expect(container.querySelectorAll('.image-item')).toHaveLength(20);
+  expect([...container.querySelectorAll('.format-badge')].every(badge => badge.textContent === 'PNG')).toBe(true);
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="上一页"]')?.disabled).toBe(true);
+});
+
+it('localizes pagination controls and the page count in English', async () => {
+  await setLanguagePreference('en');
+  analysis = { ...fixture(), results: Array.from({ length: 21 }, (_, index) => ({ ...results[0]!, id: String(index) })), selected: [], total: 21 };
+  await mount();
+  expect(container.querySelector('[aria-label="Image pagination"]')).not.toBeNull();
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 2');
+  expect(container.querySelector('.image-page-summary')?.getAttribute('aria-label')).toBe('Page 1 of 2');
+  await click('[aria-label="Next page"]');
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(1);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('2 / 2');
 });
 
 it('copies the full selection from the sidebar, including search-hidden images', async () => {
@@ -387,38 +681,40 @@ it('exports selected URLs using the page title from the visible sidebar button',
   expect(await blob.text()).toBe(results.filter(item => item.candidate).map(item => item.url).join('\n') + '\n');
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
 });
-it.each(['complete', 'fetching'] as const)('keeps the task accessible in the sidebar when the archive is %s', async status => {
+it.each(['complete', 'fetching'] as const)('keeps the task accessible in More when the archive is %s', async status => {
   const batch: ArchiveBatch = { id: 'zip', title: '测试图集', filename: '测试图集.zip', pageUrl: 'https://example.org/gallery', items: [], status, started: Date.now(), updated: Date.now(), bytes: 0, message: '正在下载图像', sourceTabId: 7, tabId: 99 };
   local.archiveBatch = batch;
   await mount();
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(status === 'fetching');
-  expect(document.querySelector<HTMLButtonElement>('.view-task-button')?.disabled).toBe(false);
+  await openMore();
+  expect(document.querySelector('.view-task-button')?.hasAttribute('data-disabled')).toBe(false);
   await chooseAction('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
 });
 
 it('opens the shared task overview even when the current webpage has no task', async () => {
   await mount();
-  expect(container.querySelector<HTMLButtonElement>('.view-task-button')!.disabled).toBe(false);
-  await click('.view-task-button');
+  expect(container.querySelector('.view-task-button')).toBeNull();
+  await chooseMoreAction('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
 });
 
-it('runs scroll extraction and opens the batch tools from visible sidebar controls', async () => {
+it('keeps scroll extraction visible and opens batch tools from More', async () => {
   await mount();
   await click('.scroll-extract-button');
   expect(send).toHaveBeenCalledWith({ type: 'ANALYZE', tabId: 7, mode: 'large', scroll: true });
-  await click('.batch-tools-button');
+  expect(container.querySelector('.batch-tools-button')).toBeNull();
+  await chooseMoreAction('.batch-tools-button');
   expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'chrome-extension://test/tools.html' });
 });
-it('resumes a cancelled archive from the visible recovery controls', async () => {
+it('resumes a cancelled archive from More', async () => {
   const batch: ArchiveBatch = { id: 'cancelled', sourceTabId: 7, pageUrl: fixture().url, title: '当前页', filename: 'own.zip', items: [
     { id: 'cached', url: 'https://images.example/a.jpg', kind: 'large', filename: '001.jpg', status: 'complete', bytes: 100 },
     { id: 'pending', url: 'https://images.example/b.jpg', kind: 'large', filename: '002.jpg', status: 'pending' },
   ], status: 'cancelled', started: Date.now(), updated: Date.now(), cacheUntil: Date.now() + 60000, bytes: 100, message: '', tabId: 98 };
   local['archiveBatch:cancelled'] = batch;
   await mount();
-  await click('[aria-label="继续未完成下载"]');
+  await chooseMoreAction('[aria-label="继续未完成下载"]');
   expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://images.example/*'] });
   expect(send).toHaveBeenCalledWith({ type: 'RESUME_ARCHIVE', batchId: 'cancelled' });
 });
@@ -464,23 +760,23 @@ it.each([
   { width: 498, columns: 3 },
   { width: 400, columns: 2 },
   { width: 290, columns: 1 },
-])('keeps keyboard navigation and virtualization aligned at $columns columns', async ({ width, columns }) => {
+])('keeps keyboard navigation aligned at $columns columns and crosses page boundaries', async ({ width, columns }) => {
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(width);
-  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function(this: HTMLElement) {
-    return this.classList.contains('image-list-heading') ? 44 : 0;
-  });
-  analysis = { ...fixture(), results: Array.from({ length: 1000 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index })), selected: ['0'], total: 1000 };
+  analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index })), selected: [], total: 53 };
   await mount();
-  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
-  expect(container.querySelector('.results-toolbar')?.closest('.image-list')).toBe(scroller);
-  const rowHeight = Number.parseInt(container.querySelector<HTMLElement>('.image-item')!.style.height) + 10;
-  await act(async () => { container.querySelector('#image-0')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
-  await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
-  expect(scroller.scrollTop).toBe(44 + Math.floor(999 / columns) * rowHeight);
-  expect(document.activeElement?.id).toBe('image-999');
-  expect(container.querySelectorAll('.image-item').length).toBeLessThanOrEqual(15);
-  await act(async () => { container.querySelector('#image-999')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })); });
-  await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
+  const move = async (id: number, key: string) => {
+    await act(async () => { container.querySelector('#image-' + id)!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); });
+    await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
+  };
+  await move(0, 'ArrowDown');
+  expect(document.activeElement?.id).toBe('image-' + columns);
+  await move(19, 'ArrowRight');
+  expect(document.activeElement?.id).toBe('image-20');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('2 / 3');
+  await move(20, 'End');
+  expect(document.activeElement?.id).toBe('image-52');
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(13);
+  await move(52, 'Home');
   expect(document.activeElement?.id).toBe('image-0');
 });
 
@@ -500,9 +796,11 @@ it.each([
   });
   expectDownloadCount(3);
   expect(container.querySelector('.archive-progress')).toBeNull();
+  expect(container.querySelector('[data-sonner-toast]')).toBeNull();
   await click('.zip-button');
   expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['L0', 'L1', 'L2'] });
-  expect(document.querySelector<HTMLButtonElement>('.view-task-button')?.disabled).toBe(false);
+  await openMore();
+  expect(document.querySelector('.view-task-button')?.hasAttribute('data-disabled')).toBe(false);
 });
 it('retains the current page progress and task link while another page updates or completes', async () => {
   const own: ArchiveBatch = { id: 'own', sourceTabId: 7, pageUrl: 'https://example.org/gallery', title: '当前页', filename: 'own.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '当前页下载中', tabId: 98 };
@@ -515,16 +813,19 @@ it('retains the current page progress and task link while another page updates o
     }
   });
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(true);
-  expect(container.querySelector('.archive-progress')?.textContent).toContain('正在获取图像');
+  expect(container.querySelector('.download-selection')?.textContent).not.toContain('正在获取图像');
+  expect(container.querySelector('[data-sonner-toast]')).toBeNull();
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
-  await chooseAction('.view-task-button');
+  await chooseMoreAction('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
   await act(async () => {
     for (const listener of listeners) listener({ 'archiveBatch:own': { newValue: { ...own, status: 'complete' } } }, 'local');
   });
+  await flushToasts();
   expectDownloadCount(3);
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(false);
-  expect(container.querySelector('.archive-progress')?.textContent).toContain('下载完成');
+  expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('下载完成');
+  expect(container.querySelector('.download-selection')?.textContent).not.toContain('下载完成');
 });
 
 it('retries a failed thumbnail without changing selection or requesting the original', async () => {
@@ -545,21 +846,62 @@ it('retries a failed thumbnail without changing selection or requesting the orig
   await act(async () => retry.dispatchEvent(new Event('error')));
   expect(container.querySelector('.thumbnail-fallback button')).not.toBeNull();
 });
-it.each(['packing', 'saving', 'partial', 'failed', 'cancelled'] as const)('shows %s feedback without claiming image processing is save progress', async status => {
+it.each(['packing', 'saving', 'partial', 'failed', 'cancelled'] as const)('does not replay stored %s feedback or add sidebar progress on open', async status => {
   const batch: ArchiveBatch = { id: 'own', sourceTabId: 7, pageUrl: fixture().url, title: '当前页', filename: 'own.zip', items: [
     { id: '1', url: results[0]!.url, kind: 'large', filename: '001.jpg', status: 'complete' },
     { id: '2', url: results[2]!.url, kind: 'large', filename: '002.jpg', status: 'failed', error: 'HTTP 404' },
   ], status, started: Date.now(), updated: Date.now(), bytes: 10, message: '网络中断，请重试。', tabId: 98 };
   local['archiveBatch:own'] = batch;
   await mount();
-  const feedback = container.querySelector('.archive-progress')!;
-  expect(feedback).not.toBeNull();
-  expect(feedback.querySelector('[role=progressbar]')).toBeNull();
-  if (status === 'partial') expect(feedback.textContent).toContain('已保存 1 张 · 1 张失败');
-  if (status === 'failed') expect(feedback.querySelector('[role=status]')?.getAttribute('title')).toContain('网络中断');
-  await click('[aria-label="查看下载详情"]');
+  expect(container.querySelector('.workspace-sidebar [role=progressbar]')).toBeNull();
+  expect(container.querySelector('.archive-progress')).toBeNull();
+  expect(container.querySelector('[aria-label="查看下载详情"]')).toBeNull();
+  expect(container.querySelector('[data-sonner-toast]')).toBeNull();
+  await chooseMoreAction('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(status === 'packing' || status === 'saving');
+});
+
+it.each([
+  { status: 'complete', type: 'success', title: '下载完成' },
+  { status: 'partial', type: 'warning', title: '部分图像下载失败' },
+  { status: 'failed', type: 'error', title: '下载失败' },
+  { status: 'cancelled', type: 'info', title: '下载已取消' },
+] as const)('shows one $type toast for a new $status result without changing the sidebar', async ({ status, type, title }) => {
+  const batch: ArchiveBatch = { id: 'own', sourceTabId: 7, pageUrl: fixture().url, title: '当前页', filename: 'own.zip', items: [
+    { id: '1', url: results[0]!.url, kind: 'large', filename: '001.jpg', status: 'complete' },
+    { id: '2', url: results[2]!.url, kind: 'large', filename: '002.jpg', status: 'failed' },
+  ], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 10, message: '网络中断，请重试。', tabId: 98 };
+  local['archiveBatch:own'] = batch;
+  await mount();
+  const notify = vi.spyOn(toast, type);
+  async function update(next: ArchiveBatch) {
+    await act(async () => { for (const listener of listeners) listener({ 'archiveBatch:own': { newValue: next } }, 'local'); });
+    await flushToasts();
+  }
+  await update({ ...batch, status });
+  expect(container.querySelector(`[data-sonner-toast][data-type=${type}]`)?.textContent).toContain(title);
+  if (status === 'failed') expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('网络中断');
+  if (status === 'partial') expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('ZIP 已保存');
+  expect(container.querySelector('.download-selection')?.textContent).toBe('下载全选取消全选');
+  expect(container.querySelector('.workspace-sidebar [role=progressbar]')).toBeNull();
+  await update({ ...batch, status, updated: Date.now() + 1 });
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
+});
+
+it('shows a new task notification once while keeping per-image progress in the task page', async () => {
+  await mount();
+  const info = vi.spyOn(toast, 'info');
+  const batch: ArchiveBatch = { id: 'new', sourceTabId: 7, pageUrl: fixture().url, title: '当前页', filename: 'own.zip', items: [], status: 'queued', started: Date.now(), updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  for (const status of ['queued', 'fetching', 'fetching', 'packing', 'saving'] as const) {
+    await act(async () => { for (const listener of listeners) listener({ 'archiveBatch:new': { newValue: { ...batch, status, updated: Date.now() } } }, 'local'); });
+    await flushToasts();
+  }
+  expect(info).toHaveBeenCalledTimes(1);
+  expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('下载任务已开始');
+  expect(container.querySelector('.workspace-sidebar [role=progressbar]')).toBeNull();
+  expect(container.querySelector('[data-sonner-toast] button[aria-label="关闭提示"]')).not.toBeNull();
 });
 
 it('retries the current task failure snapshot regardless of the current selection', async () => {
@@ -571,81 +913,82 @@ it('retries the current task failure snapshot regardless of the current selectio
   await mount();
   await click('.deselect-all-button');
   send.mockClear(); request.mockClear();
-  await click('.retry-failed-button');
+  await chooseMoreAction('.retry-failed-button');
   expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://failed.example/*'] });
   expect(send).toHaveBeenCalledWith({ type: 'RETRY_ARCHIVE', batchId: 'partial' });
   expect(analysis!.selected).toEqual([]);
   expect(request.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[0]!);
   request.mockResolvedValue(false); send.mockClear();
-  await click('.retry-failed-button');
+  await chooseMoreAction('.retry-failed-button');
   expect(send).not.toHaveBeenCalled();
   expect(container.textContent).toContain('未获得权限');
 });
 
-it('restores retired unlimited settings as Medium on the five-step policy slider', async () => {
+it('restores retired unlimited settings as Medium on the five-option segmented control', async () => {
   local.downloadSpeed = 'unlimited';
   await mount();
-  const slider = container.querySelector<HTMLElement>('.download-policy [role=slider]')!;
-  expect(slider.getAttribute('aria-valuenow')).toBe('1');
-  expect(slider.getAttribute('aria-valuemin')).toBe('0');
-  expect(slider.getAttribute('aria-valuemax')).toBe('4');
-  expect(container.querySelector('.download-policy')?.textContent).toContain('中等 · 10 并发');
-  expect(container.querySelector('.download-policy')?.textContent).not.toContain('无限制');
-  expect(slider.getAttribute('aria-labelledby')).toBeTruthy();
+  const group = container.querySelector<HTMLElement>('.download-speed-segments')!;
+  const buttons = group.querySelectorAll('[data-slot=toggle-group-item]');
+  expect(buttons).toHaveLength(5);
+  expect(buttons[1]?.getAttribute('aria-checked')).toBe('true');
+  expect(group.getAttribute('aria-labelledby')).toBeTruthy();
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('10 并发');
+  expect(container.querySelector('.download-policy [role=slider]')).toBeNull();
+  await click('.download-speed-segments [data-slot=toggle-group-item]:nth-child(2)');
+  expect(buttons[1]?.getAttribute('aria-checked')).toBe('true');
+  expect(local.downloadSpeed).toBe('unlimited');
 });
 
-it('shows English policy names only in the English interface', async () => {
+it('uses concise English field and preset names without repeating the selected preset', async () => {
   await setLanguagePreference('en');
   await mount();
-  expect(container.querySelector('.download-policy')?.textContent).toContain('Medium · 10 concurrent');
-  expect(container.querySelector('.download-policy')?.textContent).toContain('Extra High');
-  expect(container.querySelector('.download-policy')?.textContent).not.toContain('极高');
+  const buttons = container.querySelectorAll('.download-speed-segments [data-slot=toggle-group-item]');
+  expect([...buttons].map(button => button.textContent)).toEqual(['Low', 'Med', 'High', 'xhigh', 'Max']);
+  expect(container.querySelector('.download-policy h3')?.textContent).toBe('Download speed');
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('10 concurrent');
+  expect(container.querySelector('#image-format-heading')?.textContent).toBe('Filter images by type');
+  expect(container.querySelector('.collection-options-trigger')?.getAttribute('aria-labelledby')).toBeTruthy();
+  expect(container.textContent).toContain('Extraction scope');
 });
 
-it.each([{ value: 'low', label: '低', index: 0 }, { value: 'medium', label: '中等', index: 1 }, { value: 'high', label: '高', index: 2 }, { value: 'xhigh', label: '极高', index: 3 }, { value: 'max', label: '超高', index: 4 }])('persists $value policy with keyboard and restores it when reopened', async ({ value, label, index }) => {
+it.each([{ value: 'low', index: 0 }, { value: 'medium', index: 1 }, { value: 'high', index: 2 }, { value: 'xhigh', index: 3 }, { value: 'max', index: 4 }])('persists $value from its segment and restores it when reopened', async ({ value, index }) => {
   local.downloadSpeed = value === 'medium' ? 'low' : 'medium';
   await mount();
-  const slider = container.querySelector<HTMLElement>('.download-policy [role=slider]')!;
-  const current = Number(slider.getAttribute('aria-valuenow'));
-  for (let i = 0; i < Math.abs(index - current); i++) {
-    await act(async () => slider.dispatchEvent(new KeyboardEvent('keydown', { key: index > current ? 'ArrowRight' : 'ArrowLeft', bubbles: true })));
-  }
+  await click(`.download-speed-segments [data-slot=toggle-group-item]:nth-child(${index + 1})`);
   expect(local.downloadSpeed).toBe(value);
-  expect(slider.getAttribute('aria-valuenow')).toBe(String(index));
+  expect(container.querySelectorAll('.download-speed-segments [aria-checked=true]')).toHaveLength(1);
   await act(async () => root!.unmount()); root = undefined;
   await mount();
-  expect(container.querySelector('.download-policy')?.textContent).toContain(label);
-  expect(container.querySelector('.download-policy [role=slider]')?.getAttribute('aria-valuenow')).toBe(String(index));
+  expect(container.querySelectorAll('.download-speed-segments [data-slot=toggle-group-item]')[index]?.getAttribute('aria-checked')).toBe('true');
 });
 
-it('reverts a slider change if saving fails and responds to another page changing the policy', async () => {
+it('preserves the saved segment on failure and responds to another page changing the speed', async () => {
   await mount();
   chrome.storage.local.set = vi.fn().mockRejectedValue(new Error('storage unavailable'));
-  const slider = container.querySelector<HTMLElement>('.download-policy [role=slider]')!;
-  await act(async () => slider.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })));
-  expect(container.textContent).toContain('下载策略保存失败，请重试。');
-  expect(slider.getAttribute('aria-valuenow')).toBe('1');
+  await click('.download-speed-segments [data-slot=toggle-group-item]:last-child');
+  expect(container.textContent).toContain('下载速度保存失败，请重试。');
+  expect(container.querySelectorAll('.download-speed-segments [data-slot=toggle-group-item]')[1]?.getAttribute('aria-checked')).toBe('true');
   await act(async () => { for (const listener of listeners) listener({ downloadSpeed: { newValue: 'xhigh' } }, 'local'); });
-  expect(slider.getAttribute('aria-valuenow')).toBe('3');
+  expect(container.querySelectorAll('.download-speed-segments [data-slot=toggle-group-item]')[3]?.getAttribute('aria-checked')).toBe('true');
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('25 并发');
 });
-it('previews pointer dragging and saves only the final policy when released', async () => {
-  local.downloadSpeed = 'medium';
+
+it('locks the speed segments while a save is pending', async () => {
   await mount();
-  const track = container.querySelector<HTMLElement>('.download-policy [data-slot=slider]')!;
-  vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 240, height: 24, right: 240, bottom: 24, x: 0, y: 0, toJSON: () => ({}) });
-  let captured = false;
-  track.setPointerCapture = () => { captured = true; };
-  track.hasPointerCapture = () => captured;
-  track.releasePointerCapture = () => { captured = false; };
-  await act(async () => track.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, clientX: 120, bubbles: true })));
-  expect(local.downloadSpeed).toBe('medium');
-  expect(container.querySelector('.download-policy')?.textContent).toContain('高 · 20 并发');
-  await act(async () => track.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 180, bubbles: true })));
-  expect(local.downloadSpeed).toBe('medium');
-  await act(async () => track.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 180, bubbles: true })));
-  expect(local.downloadSpeed).toBe('xhigh');
+  let finish!: () => void;
+  const save = vi.fn(() => new Promise<void>(resolve => { finish = resolve; }));
+  chrome.storage.local.set = save;
+  await click('.download-speed-segments [data-slot=toggle-group-item]:last-child');
+  expect(container.querySelector('.download-speed-segments')?.getAttribute('aria-busy')).toBe('true');
+  expect([...container.querySelectorAll<HTMLButtonElement>('.download-speed-segments button')].every(button => button.disabled)).toBe(true);
+  await click('.download-speed-segments [data-slot=toggle-group-item]:first-child');
+  expect(save).toHaveBeenCalledTimes(1);
+  await act(async () => { finish(); });
+  expect(container.querySelector('.download-speed-segments')?.getAttribute('aria-busy')).toBe('false');
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('30 并发');
 });
-it('keeps page order and exposes settings and utility actions directly in the sidebar', async () => {
+
+it('keeps page order and separates common sidebar actions from More', async () => {
   analysis!.results = [...analysis!.results].reverse();
   await mount();
   expect([...container.querySelectorAll('.image-name')].map(node => node.textContent)).toEqual(['2','1','0']);
@@ -654,11 +997,16 @@ it('keeps page order and exposes settings and utility actions directly in the si
   expect(document.querySelector('.collection-options')).toBeNull();
   await click('.preview-background-control [role=checkbox]');
   expect(container.querySelector('main')?.dataset.darkPreview).toBe('true');
-  expect(container.querySelector('.more-actions-button')).toBeNull();
+  expect(container.querySelector('.more-actions-button')).not.toBeNull();
   expect(document.querySelector('[role=menu]')).toBeNull();
-  for (const selector of ['.copy-links-button', '.export-links-button', '.scroll-extract-button', '.batch-tools-button', '.view-task-button']) {
+  for (const selector of ['.copy-links-button', '.export-links-button', '.scroll-extract-button']) {
     expect(container.querySelector(selector)?.closest('.workspace-sidebar')).toBeTruthy();
   }
+  await openMore();
+  expect(document.querySelector('[role=menu] .batch-tools-button')).not.toBeNull();
+  expect(document.querySelector('[role=menu] .view-task-button')).not.toBeNull();
+  await act(async () => { document.querySelector('[role=menu]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+  expect(document.querySelector('[role=menu]')).toBeNull();
   expect(analysis!.selected).toEqual(['L0','L1','L2']);
 });
 
@@ -666,48 +1014,64 @@ it('persists extraction opt-outs and keeps unset options enabled', async () => {
   local.collectOptions = { css: false };
   await mount();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
-  await click('.collection-options-trigger');
-  const boxes = () => [...document.querySelectorAll<HTMLElement>('.collection-options [role=option]')];
-  expect(boxes().map(box => box.getAttribute('aria-selected'))).toEqual(['true', 'false', 'true']);
+  await openExtractionOptions();
+  const boxes = () => [...document.querySelectorAll<HTMLElement>('.collection-options [role=menuitemcheckbox]')];
+  expect(boxes().map(box => box.getAttribute('aria-checked'))).toEqual(['true', 'false', 'true']);
   await act(async () => boxes()[0]!.click());
   expect(local.collectOptions).toEqual({ icons: false, css: false, inline: true });
   await act(async () => root!.unmount()); root = undefined;
   await mount();
-  await click('.collection-options-trigger');
-  expect(boxes().map(box => box.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
+  await openExtractionOptions();
+  expect(boxes().map(box => box.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true']);
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 1 项');
 });
+it('does not overwrite saved extraction options with a delayed initial read', async () => {
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  const old = new Promise<Record<string, unknown>>(resolve => { finish = resolve; });
+  chrome.storage.local.get = vi.fn(async keys => keys === 'collectOptions' ? old : structuredClone(local)) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
+  expect(local.collectOptions).toEqual({ icons: false, css: true, inline: true });
+  await act(async () => { finish({ collectOptions: { icons: true, css: true, inline: true } }); });
+  expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('false');
+});
+it.each(['interaction', 'storage event'])('does not overwrite a newer download speed from a %s with a delayed read', async source => {
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  const old = new Promise<Record<string, unknown>>(resolve => { finish = resolve; });
+  chrome.storage.local.get = vi.fn(async keys => keys === 'downloadSpeed' ? old : structuredClone(local)) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  if (source === 'interaction') await click('.download-speed-segments [data-slot=toggle-group-item]:last-child');
+  else await act(async () => { for (const listener of listeners) listener({ downloadSpeed: { newValue: 'max' } }, 'local'); });
+  await act(async () => { finish({ downloadSpeed: 'low' }); });
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('30 并发');
+});
 
-it('supports keyboard selection and Escape in the compact extraction picker', async () => {
+it('supports keyboard selection and Escape in the standard extraction menu', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  const input = document.querySelector<HTMLInputElement>('input[role=combobox][readonly]')!;
-  expect(input).not.toBeNull();
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-  });
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  });
-  expect(Object.values(local.collectOptions as Record<string, boolean>).filter(Boolean)).toHaveLength(2);
+  await openExtractionOptions();
+  const menu = document.querySelector<HTMLElement>('.collection-options')!;
+  const first = menu.querySelector<HTMLElement>('[role=menuitemcheckbox]')!;
+  expect(document.querySelector('input[role=combobox][readonly]')).toBeNull();
+  first.focus();
+  await act(async () => { first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
+  await flushToasts();
+  expect(local.collectOptions).toEqual({ icons: false, css: true, inline: true });
   expect(document.querySelector('.collection-options')).not.toBeNull();
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  });
+  await act(async () => { menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(container.querySelector('.collection-options-trigger')?.getAttribute('aria-expanded')).toBe('false');
-  // Base UI retains closed content during its exit transition. Check its actual
-  // open state rather than depending on animation timing in happy-dom.
-  expect(document.querySelector('[data-slot="combobox-content"][data-open]')).toBeNull();
-  const exitingPopup = document.querySelector('.collection-options')?.closest('[data-slot="combobox-content"]');
-  if (exitingPopup) expect(exitingPopup.hasAttribute('data-closed')).toBe(true);
+  expect(document.querySelector('.collection-options[data-state=open]')).toBeNull();
 });
 
 it('does not show an unsaved extraction change as saved', async () => {
   await mount();
   vi.spyOn(chrome.storage.local, 'set').mockRejectedValueOnce(new Error('storage unavailable'));
-  await click('.collection-options-trigger');
-  await chooseAction('.collection-options [role=option]');
-  expect(document.querySelector('.collection-options [role=option]')?.getAttribute('aria-selected')).toBe('true');
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('true');
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('全部启用');
   expect(container.textContent).toContain('无法保存选项，请重试。');
 });
@@ -727,6 +1091,23 @@ it('switches the popup language while preserving search and selection', async ()
     expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
   } finally { await act(async () => { await setLanguagePreference('zh-CN'); }); }
 });
+it('changes language through the official Select menu without losing the current results', async () => {
+  vi.stubGlobal('chrome', { ...chrome, runtime: { ...chrome.runtime, id: 'test' } });
+  await mount();
+  const selected = [...analysis!.selected];
+  const trigger = container.querySelector<HTMLElement>('.language-control [data-slot=select-trigger]')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await flushToasts();
+  expect(document.querySelector('[data-slot=select-content][role=listbox]')).not.toBeNull();
+  const english = [...document.querySelectorAll<HTMLElement>('[data-slot=select-item]')].find(item => item.textContent === 'English')!;
+  await act(async () => { english.click(); });
+  await flushToasts();
+  expect(local.interfaceLanguage).toBe('en');
+  expect(container.querySelector('.language-control [data-slot=select-value]')?.textContent).toBe('English');
+  expect(container.querySelector('.visible-count')?.textContent).toBe('Originals: 3');
+  expect(analysis!.selected).toEqual(selected);
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+});
 
 const resumeCalls = () => send.mock.calls.filter(([message]) => message.type === 'RESUME_DOWNLOADS');
 it.each(['zh-CN', 'en'] as const)('shows a refused selection save in %s and allows the next save', async language => {
@@ -736,7 +1117,7 @@ it.each(['zh-CN', 'en'] as const)('shows a refused selection save in %s and allo
       ? { ok: false, message: '结果已变化，请重新选择图像。' } : { ok: true });
     await mount();
     await click('.deselect-all-button');
-    expect(container.querySelector('.feedback')?.textContent).toContain(language === 'en'
+    expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain(language === 'en'
       ? 'Results have changed. Select images again.' : '结果已变化，请重新选择图像。');
     send.mockImplementation(async () => ({ ok: true }));
     await click('.select-all-button');
@@ -750,7 +1131,7 @@ it('reports an empty selection-save response instead of silently accepting it', 
   send.mockImplementation(async (message: Request) => message.type === 'SELECT' ? undefined : { ok: true });
   await mount();
   await click('.deselect-all-button');
-  expect(container.querySelector('.feedback')?.textContent).toContain('选择未能保存，请重新选择。');
+  expect(container.querySelector('[data-sonner-toast]')?.textContent).toContain('选择未能保存，请重新选择。');
 });
 
 it('requests task recovery without waiting for a hanging analysis', async () => {
@@ -795,31 +1176,27 @@ it('requests recovery on a restricted page too, where there is nothing to analys
 
 it('allows every extraction option to be turned off and back on independently', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  for (let i = 0; i < 3; i++) await chooseAction(`.collection-options [role=option]:nth-child(${i + 1})`);
+  await openExtractionOptions();
+  for (let i = 0; i < 3; i++) await chooseAction(`.collection-options [role=menuitemcheckbox]:nth-child(${i + 1})`);
   expect(local.collectOptions).toEqual({ icons: false, css: false, inline: false });
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('仅页面图像');
   expect(document.querySelector('.collection-options')).not.toBeNull();
-  await chooseAction('.collection-options [role=option]:nth-child(2)');
+  await chooseAction('.collection-options [role=menuitemcheckbox]:nth-child(2)');
   expect(local.collectOptions).toEqual({ icons: false, css: true, inline: false });
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
 });
 
 it('closes extraction settings with Escape and preserves the saved summary', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  await chooseAction('.collection-options [role=option]');
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
   const checkbox = container.querySelector<HTMLElement>('.collection-options-trigger')!;
   await act(async () => { checkbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(container.querySelector('.collection-options-trigger')?.getAttribute('aria-expanded')).toBe('false');
-  // Official exit animations may retain a closed popup until animationend.
-  // Assert its interactive state instead of happy-dom's animation timing.
-  expect(document.querySelector('[data-slot=combobox-content][data-open]')).toBeNull();
-  const exitingPopup = document.querySelector('[data-slot=combobox-content]');
-  if (exitingPopup) expect(exitingPopup.hasAttribute('data-closed')).toBe(true);
+  expect(document.querySelector('.collection-options[data-state=open]')).toBeNull();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
-  await click('.collection-options-trigger');
-  expect(document.querySelector('[data-slot=combobox-content][data-open] [role=option]')?.getAttribute('aria-selected')).toBe('false');
+  await openExtractionOptions();
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('false');
 });
 
 it('ignores cached automatic selections but preserves explicit user choices', async () => {
@@ -840,7 +1217,7 @@ it('keeps zero-selection bulk actions disabled while single-image download remai
   expectDownloadCount(0);
   for (const selector of ['.zip-button', '.copy-links-button', '.export-links-button']) expect(container.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
   await click('.image-item .item-download');
-  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['L0'] });
+  expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD', job: 'test', selected: ['L0'] });
   expect(analysis!.selected).toEqual([]);
 });
 it('can clear choices hidden in another image mode without selecting that mode automatically', async () => {

@@ -1,7 +1,8 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import type { AnalysisState, DownloadBatch, Request } from '../lib/types';
+import type { PopupViewState } from '../lib/popupViewState';
 
-let saved: { [key: `analysis:${number}`]: AnalysisState | undefined; downloadBatch?: DownloadBatch };
+let saved: { [key: `analysis:${number}`]: AnalysisState | undefined; [key: `popupView:${number}`]: PopupViewState | undefined; downloadBatch?: DownloadBatch };
 let handler: (message: Request, sender: { id: string }, response: (result: unknown) => void) => boolean;
 let updated: (id: number, change: { status: string }) => void;
 const capture = { url: 'https://example.org/', baseUrl: 'https://example.org/', title: 'Landscapes', total: 1, truncated: false, challenged: false, images: [{ source: '/landscape.jpg', alt: 'Landscape', width: 640, height: 400, declared: ['/full.jpg'], srcsets: [], link: '' }] };
@@ -190,6 +191,62 @@ it('reports challenge pages without exporting images', async () => {
   expect(saved['analysis:1']!.status).toBe('error');
   expect(saved['analysis:1']!.results).toEqual([]);
   expect(saved['analysis:1']!.message).toContain('验证');
+});
+it('coalesces a burst of popup scroll saves without losing the final position', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const view: PopupViewState = { job: saved['analysis:1']!.job, query: '', excludedFormats: [], darkPreview: false };
+  const get = vi.spyOn(chrome.storage.session, 'get');
+  const set = vi.spyOn(chrome.storage.session, 'set');
+  await Promise.all(Array.from({ length: 60 }, (_, scrollTop) => send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: { ...view, gallery: { results: 'results', page: 0, scrollTop } } })));
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(59);
+  expect(get).toHaveBeenCalledTimes(1);
+  expect(set).toHaveBeenCalledTimes(1);
+});
+it('keeps pending view batches separate across extraction jobs', async () => {
+  vi.useFakeTimers();
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const oldView: PopupViewState = { job: saved['analysis:1']!.job, query: 'old', excludedFormats: [], darkPreview: false };
+  const oldSave = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: oldView });
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const newView = { ...oldView, job: saved['analysis:1']!.job, query: 'new' };
+  const newSave = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: newView });
+  await vi.advanceTimersByTimeAsync(100);
+  expect(await oldSave).toMatchObject({ ok: false });
+  expect(await newSave).toEqual({ ok: true });
+  expect(saved['popupView:1']).toMatchObject({ job: newView.job, query: 'new' });
+});
+it('orders popup state writes independently of popup lifetime and rejects superseded jobs', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const job = saved['analysis:1']!.job;
+  const view: PopupViewState = { job, query: '', excludedFormats: [], darkPreview: false, gallery: { results: 'results', page: 0, scrollTop: 100 } };
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const originalSet = chrome.storage.session.set;
+  let blocked = false;
+  chrome.storage.session.set = vi.fn(async (values: Record<string, unknown>) => {
+    if ((values['popupView:1'] as PopupViewState)?.gallery?.scrollTop === 100) { blocked = true; await gate; }
+    await originalSet(values);
+  });
+  const first = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view });
+  await vi.waitFor(() => expect(blocked).toBe(true));
+  const latest = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: { ...view, gallery: { ...view.gallery!, scrollTop: 385 } } });
+  release();
+  expect(await first).toEqual({ ok: true });
+  expect(await latest).toEqual({ ok: true });
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+  await restartWorker();
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  expect(await send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view })).toMatchObject({ ok: false });
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+});
+it('does not restore a queued popup view after its tab navigates', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const view: PopupViewState = { job: saved['analysis:1']!.job, query: 'old', excludedFormats: [], darkPreview: false };
+  updated(1, { status: 'loading' });
+  expect(await send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view })).toMatchObject({ ok: false });
+  expect(saved['analysis:1']).toBeUndefined();
+  expect(saved['popupView:1']).toBeUndefined();
 });
 it('invalidates previous results when the tab reloads', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
@@ -441,6 +498,28 @@ it('legacy DOWNLOAD starts only known ids once, in result order', async () => {
   await grantDownloads();
   expect(await send({ type: 'DOWNLOAD', job: saved['analysis:1']!.job, selected: ['e', 'c', 'c', 'nope', 'a'] })).toEqual({ ok: true });
   expect(saved.downloadBatch?.jobs.map(job => job.url)).toEqual(['a', 'c', 'e'].map(id => `https://images.example.org/${id}.jpg`));
+});
+it('downloads one known image directly and permits another native download without an archive or queue', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const state = seedResults();
+  const { download } = await grantDownloads();
+  chrome.tabs.create = vi.fn();
+  const before = [...state.selected];
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['a', 'a', 'unknown'] })).toMatchObject({ ok: true, downloadId: 1 });
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['b'] })).toMatchObject({ ok: true, downloadId: 2 });
+  expect(download).toHaveBeenNthCalledWith(1, { url: state.results[0]!.url, conflictAction: 'uniquify', saveAs: false });
+  expect(download).toHaveBeenNthCalledWith(2, { url: state.results[1]!.url, conflictAction: 'uniquify', saveAs: false });
+  expect(chrome.tabs.create).not.toHaveBeenCalled();
+  expect(saved.downloadBatch).toBeUndefined();
+  expect(state.selected).toEqual(before);
+});
+it('reports a native image download failure without creating an archive task', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const state = seedResults();
+  const { download } = await grantDownloads();
+  download.mockRejectedValueOnce(new Error('native download rejected'));
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['a'] })).toEqual({ ok: false, message: 'native download rejected' });
+  expect(saved.downloadBatch).toBeUndefined();
 });
 it('page downloads exclude generated URLs and number actual URLs in page discovery order', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });

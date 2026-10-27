@@ -7,11 +7,12 @@ import { collectPage } from '../lib/collect';
 import { resolveImages, resolveImagesWithDiagnostics } from '../lib/resolve';
 import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../lib/extractionVersion';
 import type { AnalysisState, ImageResult, Request, SelectionMode } from '../lib/types';
-import { advanceDownloads, failDownloads, startDownloads } from '../lib/downloads';
+import { advanceDownloads, downloadSingleImage, failDownloads, startDownloads } from '../lib/downloads';
 import { withTimeout } from '../lib/timeout';
 import { analysisFilter, defaultImageFilter, filterImageResults, selectBySize } from '../lib/selection';
 import { resumeArchive, retryArchive, startArchive, interruptArchive, recoverArchive, pruneArchives, openArchivePage } from '../lib/archiveState';
 import { readAnalysis, findAnalysis, saveAnalysis, clearAnalysis } from '../lib/analysisState';
+import { persistPopupView, readSavedPopupView } from '../lib/popupViewPersistence';
 
 const SELECTION_MODES = new Set<string>(['page', 'large', 'small', 'all', 'custom']);
 const SELECTION_FILTERS = new Set<string>(['page', 'large', 'small', 'all']);
@@ -114,13 +115,21 @@ export default defineBackground(() => {
     if (await chrome.permissions.contains({ permissions: ['downloads'] }) && attachDownloadListener()) await advanceDownloads(true);
   }
   chrome.runtime.onMessage.addListener((message: Request, sender, respond) => {
-    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'IMPORT_CAPTURE', 'HOSTED_ORIGINAL', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
+    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'SAVE_POPUP_VIEW', 'LOAD_POPUP_VIEW', 'IMPORT_CAPTURE', 'HOSTED_ORIGINAL', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
     (async () => {
       try {
         if (message.type === 'ANALYZE') {
           if (!Number.isInteger(message.tabId)) throw new Error('标签页无效。');
           const analysis = await analyze(message.tabId, message.mode, message.scroll === true);
           respond({ ok: true, analysis }); return;
+        } else if (message.type === 'SAVE_POPUP_VIEW') {
+          if (!Number.isInteger(message.tabId) || message.tabId < 0) throw new Error('图像列表状态无效。');
+          await persistPopupView(message.tabId, message.view);
+          respond({ ok: true }); return;
+        } else if (message.type === 'LOAD_POPUP_VIEW') {
+          if (!Number.isInteger(message.tabId) || message.tabId < 0 || typeof message.job !== 'string' || !message.job) throw new Error('图像列表状态无效。');
+          const view = await readSavedPopupView(message.tabId, message.job);
+          respond({ ok: true, view }); return;
         } else if (message.type === 'IMPORT_CAPTURE') {
           const capture = message.capture;
           if (!capture || !Array.isArray(capture.images) || capture.images.length > 2000 || JSON.stringify(capture).length > 4000000) throw new Error('导入内容超过限制。');
@@ -185,7 +194,7 @@ export default defineBackground(() => {
           respond({ ok: true, ...created! });
           return;
         } else if (message.type === 'DOWNLOAD' || message.type === 'DOWNLOAD_ZIP') {
-          let created: { batchId: string; tabId?: number } | undefined;
+          let created: { batchId?: string; tabId?: number; downloadId?: number } | undefined;
           await orderedDownload(async () => {
             const state = await findAnalysis(message.job);
             if (state?.job !== message.job || state.status !== 'done' || !Array.isArray(message.selected)) throw new Error('结果已变化，请重新选择图像。');
@@ -195,6 +204,7 @@ export default defineBackground(() => {
             const scope = filterImageResults(state.results, analysisFilter(state), '');
             const selected = selectedResults(scope, message.selected).map(item => pageMode ? { ...item, candidate: false } : item);
             if (message.type === 'DOWNLOAD_ZIP') created = await startArchive(selected, state.title || '', state.url, state.tabId, state.sourceUrl);
+            else if (selected.length === 1) created = { downloadId: await downloadSingleImage(selected[0]!) };
             else await startDownloads(selected, state.url);
           });
           respond({ ok: true, ...created }); return;

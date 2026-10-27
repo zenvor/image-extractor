@@ -1,5 +1,19 @@
 import type { DownloadBatch, ImageResult } from './types';
 import { imageExtension, numberedImageName } from './outputNaming.js';
+import { imageUrl, isInlineImage } from './imageSource';
+
+/** Let Chrome stream a single image to disk; no ZIP, fetch/blob buffer or task tab. */
+export async function downloadSingleImage(item: ImageResult): Promise<number> {
+  const url = imageUrl(item.url, item.url);
+  if (!url) throw new Error('图像地址无效，无法下载。');
+  const options: chrome.downloads.DownloadOptions = { url, conflictAction: 'uniquify', saveAs: false };
+  if (isInlineImage(url)) {
+    const mime = /^data:([^;,]+)/i.exec(url)![1]!;
+    options.filename = numberedImageName(1, imageExtension('', mime), item.label || 'image').slice(4);
+  }
+  // For remote files Chrome uses the response filename/type, including Content-Disposition.
+  return chrome.downloads.download(options);
+}
 
 export const DOWNLOAD_KEY = 'downloadBatch';
 export function downloadFilename(item: ImageResult, index: number, pageUrl: string): string {
