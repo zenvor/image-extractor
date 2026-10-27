@@ -22,7 +22,7 @@
 | 多URL：runner/cli/inputs.js | tools.html | 明确输入、最多20页、逐页分析、可选滚动加载、按需授权；每页独立ZIP和任务；辅助页跟踪结果和汇总 |
 | 本地HTML：runner/lib/imageExtractor.js | tools.html、collectPage(imported) | 主动选择最多20文件，单文件16MB；不执行脚本，仅读现有地址；支持无来源 URL 时 HTML 内的绝对 base；停止不再提交下一文件；报告无法解析的相对地址，支持补充基准地址后单文件重试、名称及修改时间排序 |
 | ZIP、文件名：runner/lib/fileManager.js | archive.ts、downloads.ts、outputNaming.js | 多图保留三位序号+原文件名、网页标题ZIP、chpic响应头命名；卡片单图和仅选一张时直接保存图片，由Chrome处理远程文件名和类型，内嵌图像生成安全文件名 |
-| 重试、并发、失败清单、取消 | archive.ts | 五档分段选择（低/中/高/极高/超高），跨任务全局上限30、来源额度5/10/20/25/30及启动间隔，429/503冷却；单图额外重试一次，未复制CLI所有调优参数 |
+| 重试、并发、失败清单、取消 | archive.ts | 五档分段选择（低/中/高/极高/超高），跨任务全局上限30、来源额度5/10/20/25/30及启动间隔，429/503冷却；ZIP 内每个图像请求失败后额外重试一次；原生单图下载由 Chrome 管理，未复制CLI所有调优参数 |
 | 仅重试失败项 | archiveState.ts、requestArchiveRetry.ts | 已有；保留原编号、补充ZIP、成功项不请求 |
 | 中断恢复：runner/lib/downloadLedger.js | archive.ts、archiveState.ts | 新增24小时OPFS缓存恢复，核验已记录完成文件大小/格式；损坏缓存重下 |
 | 复制链接、TXT | popup菜单 | 已有增强 |

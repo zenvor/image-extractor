@@ -5,12 +5,12 @@ import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton, InputGr
 import { Badge } from '../../components/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
 import { Toaster, toast } from '../../components/ui/sonner';
-import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
 import { Label } from '../../components/ui/label';
 import { useLocale } from '../../lib/useLocale';
 import { t, translateMessage } from '../../lib/i18n';
 import { previewState } from './preview';
-import { loadPopupSnapshot, preview, workspace, type PopupSnapshot } from './bootstrap';
+import { loadPopupSnapshot, matchingAnalysis, preview, workspace, type PopupSnapshot } from './bootstrap';
 import { normalizeCollectOptions } from '../../lib/collectOptions';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, Check, CheckCheck, CircleAlert, CircleMinus, Globe2, Images, LoaderCircle, ScanSearch, X, Copy, FileText, ChevronsDown, Layers, ListTodo, Play, RotateCw, EllipsisVertical } from 'lucide-react';
@@ -22,7 +22,7 @@ import { Brand } from '../../components/Brand';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { ANALYSIS_KEY, analysisKey } from '../../lib/analysisState';
-import { popupViewKey, type PopupViewState, type GalleryPosition } from '../../lib/popupViewState';
+import { type PopupViewState, type GalleryPosition } from '../../lib/popupViewState';
 import { ImageList } from '../../components/ImageList';
 import { archiveFeedback } from '../../lib/archiveFeedback';
 import { requestArchiveRetry, requestArchiveResume } from '../../lib/requestArchiveRetry';
@@ -58,12 +58,11 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
   const [darkPreview, setDarkPreview] = useState(initial.view?.darkPreview || false);
   const [query, setQuery] = useState(initial.view?.query || '');
   const popupView = useRef<PopupViewState | undefined>(initial.view);
-  const viewWrites = useRef(Promise.resolve());
   const [feedback, setFeedback] = useState(initial.feedback);
   const feedbackToastId = useId();
   const downloadToastId = useId();
   const downloadsInitialized = useRef(false);
-  const previousDownload = useRef<{ id: string; status: ArchiveBatch['status'] } | undefined>(undefined);
+  const previousDownloads = useRef(new Map<string, ArchiveBatch['status']>());
   const unavailable = initial.unavailable;
   const [busy, setBusy] = useState(initial.shouldAnalyze);
   const [starting, setStarting] = useState(false);
@@ -103,14 +102,12 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
     if (preview || state?.status !== 'done' || page.id === undefined) return;
     const value: PopupViewState = { job: state.job, query, excludedFormats: [...excludedFormats], darkPreview, gallery };
     popupView.current = value;
-    const key = popupViewKey(page.id);
-    // Keep slow storage writes ordered so an earlier scroll/filter cannot win on reopen.
-    viewWrites.current = viewWrites.current.catch(() => {}).then(async () => { await chrome.storage.session.set({ [key]: value }); });
-    viewWrites.current.catch(() => {});
+    // Dispatch immediately: the background queue outlives this popup and validates the job.
+    void chrome.runtime.sendMessage({ type: 'SAVE_POPUP_VIEW', tabId: page.id, view: value } satisfies Request).catch(() => {});
   }
 
   function restore(value?: AnalysisState) {
-    const match = value && value.resolverVersion === ORIGINAL_RESOLVER_VERSION && value.tabId === pageRef.current.id && value.url === pageRef.current.url ? value : undefined;
+    const match = matchingAnalysis(value, pageRef.current);
     // Late events from an older worker/page must not erase a newer result/error.
     if (value && !match) return;
     if (hostedController.current && match?.job !== hostedJob.current) {
@@ -156,30 +153,56 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
     if (preview) return;
     let mounted = true;
     let changedWhileRestoring = false;
+    let latestAnalysis = initial.analysis;
+    const archiveChanges = new Map<string, unknown>();
     const key = analysisKey(initial.page.id ?? -1);
     function changed(changes: Record<string, chrome.storage.StorageChange>, area: string) {
       if (!mounted) return;
       if (area === 'session' && changes[key]) {
+        const value = changes[key]!.newValue as AnalysisState | undefined;
+        const match = matchingAnalysis(value, initial.page);
+        if (value && !match) return;
         changedWhileRestoring = true;
-        restore(changes[key]!.newValue as AnalysisState | undefined);
+        latestAnalysis = match;
+        restore(value);
       }
       if (area === 'local') {
         const updates = Object.fromEntries(Object.entries(changes).filter(([key]) => isArchiveKey(key)).map(([key, change]) => [key, change.newValue]));
+        for (const [key, value] of Object.entries(updates)) archiveChanges.set(key, value);
         if (Object.keys(updates).length) setArchiveRecords(current => ({ ...current, ...updates }));
       }
     }
     chrome.storage.onChanged.addListener(changed);
     // Reconcile updates between bootstrap and subscription without showing an empty/loading frame.
     // A storage event received during this read is newer and must win.
-    if (!initial.shouldAnalyze && initial.analysis) {
-      void chrome.storage.session.get([key, ANALYSIS_KEY]).then(values => {
-        if (mounted && !changedWhileRestoring) restore((values[key] || values[ANALYSIS_KEY]) as AnalysisState | undefined);
-      }).catch(() => {});
+    async function reconcileAnalysis() {
+      try {
+        const values = await chrome.storage.session.get([key, ANALYSIS_KEY]);
+        if (!mounted) return;
+        if (!changedWhileRestoring) {
+          const value = (values[key] || values[ANALYSIS_KEY]) as AnalysisState | undefined;
+          const match = matchingAnalysis(value, initial.page);
+          if (!value || match) {
+            latestAnalysis = match;
+            restore(value);
+          }
+        }
+      } catch { /* The bootstrap snapshot is still usable if its refresh fails. */ }
+      if (!mounted || !initial.shouldAnalyze) return;
+      if (latestAnalysis) setBusy(false);
+      else if (initial.page.id !== undefined) await performAnalysis(initial.page.id);
     }
+    void reconcileAnalysis();
+    void chrome.storage.local.get(null).then(values => {
+      if (!mounted) return;
+      // Events received during the read are newer, including removal tombstones.
+      setArchiveRecords(() => ({
+        ...Object.fromEntries(Object.entries(values).filter(([key]) => isArchiveKey(key))),
+        ...Object.fromEntries(archiveChanges),
+      }));
+    }).catch(() => {});
     Promise.resolve().then(() => chrome.runtime.sendMessage({ type: 'RESUME_DOWNLOADS' })).catch(() => {});
     purgeStaleArchiveFiles().catch(() => {});
-    // Only a cache miss starts extraction. A cached first frame is already complete.
-    if (initial.shouldAnalyze && initial.page.id !== undefined) void performAnalysis(initial.page.id);
     return () => {
       mounted = false;
       hostedController.current?.abort();
@@ -213,24 +236,31 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
   }, [feedback, feedbackToastId, locale]);
   useEffect(() => () => { toast.dismiss(feedbackToastId); toast.dismiss(downloadToastId); }, [feedbackToastId, downloadToastId]);
   useEffect(() => {
-    const previous = previousDownload.current;
-    previousDownload.current = archive ? { id: archive.id, status: archive.status } : undefined;
+    const batches = archivesFromStorage(archiveRecords).filter(batch => page.id !== undefined && batch.sourceTabId === page.id && batch.pageUrl === page.url);
+    const previous = previousDownloads.current;
+    previousDownloads.current = new Map(batches.map(batch => [batch.id, batch.status]));
     // Stored history is a baseline, not a fresh notification every time the popup opens.
     if (!downloadsInitialized.current) { downloadsInitialized.current = true; return; }
-    if (!archive || (previous?.id === archive.id && previous.status === archive.status)) return;
-    if (archiveActive(archive)) {
-      if (previous?.id !== archive.id || !['queued', 'fetching', 'packing', 'saving'].includes(previous.status)) {
-        toast.info(t("下载任务已开始"), { id: downloadToastId, description: t("可在“更多 → 下载任务”中查看进度。") });
+    for (const batch of batches) {
+      const status = previous.get(batch.id);
+      if (status === batch.status) continue;
+      const wasActive = status !== undefined && archiveActive({ ...batch, status });
+      if (archiveActive(batch)) {
+        if (!wasActive) {
+          toast.info(t("下载任务已开始"), { id: downloadToastId, description: t("可在“更多 → 下载任务”中查看进度。") });
+        }
+        continue;
       }
-      return;
+      // Newly discovered terminal history is not a new download result.
+      if (!wasActive) continue;
+      const result = archiveFeedback(batch);
+      const options = { id: downloadToastId, description: result.detail };
+      if (batch.status === 'failed') toast.error(result.title, options);
+      else if (batch.status === 'partial') toast.warning(result.title, options);
+      else if (batch.status === 'complete') toast.success(result.title, options);
+      else toast.info(result.title, options);
     }
-    const result = archiveFeedback(archive);
-    const options = { id: downloadToastId, description: result.detail };
-    if (archive.status === 'failed') toast.error(result.title, options);
-    else if (archive.status === 'partial') toast.warning(result.title, options);
-    else if (archive.status === 'complete') toast.success(result.title, options);
-    else toast.info(result.title, options);
-  }, [archive?.id, archive?.status, downloadToastId]);
+  }, [archiveRecords, page.id, page.url, downloadToastId]);
 
   async function persistSelection(ids: string[], nextMode: SelectionMode, scope: ImageFilter) {
     if (preview || !state) return;
@@ -435,9 +465,9 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
           <ImageList showKind={false} header={pagination => <div className="workspace-controls">
           <div className="results-toolbar"><div className="results-count-group"><span className="visible-count">{t(filter === 'large' ? '{0} 张原图' : '{0} 张图像', [visible.length === scopeTotal ? visible.length : visible.length + ' / ' + scopeTotal])}</span>{pagination}</div><Label className="preview-background-control"><Checkbox checked={darkPreview} onCheckedChange={value => setDarkPreview(value === true)} />{t("深色图像背景")}</Label><div className="view-options" role="group" aria-label={t("图像显示方式")}><Button size="sm" variant={view === 'grid' ? 'secondary' : 'ghost'} aria-label={t("网格视图")} aria-pressed={view === 'grid'} onClick={() => changeView('grid')}>{t("网格")}</Button><Button size="sm" variant={view === 'list' ? 'secondary' : 'ghost'} aria-label={t("列表视图")} aria-pressed={view === 'list'} onClick={() => changeView('list')}>{t("列表")}</Button></div></div>
         </div>} key={(state?.job || '') + filter + query} initialPosition={popupView.current?.job === state?.job ? popupView.current?.gallery : undefined} onPositionChange={(position: GalleryPosition) => savePopupView(position)} items={visible} selected={selectedSet} onToggle={toggle} onCopy={item => copy(item)} onDownload={item => download([item])} downloadDisabled={starting || running || activeArchive} view={view} empty={<Empty className="empty">
-            <EmptyMedia variant="icon" className="empty-symbol">{running ? <LoaderCircle className="animate-spin" /> : state?.status === 'error' || unavailable ? <CircleAlert /> : <Images />}</EmptyMedia>
+            <EmptyHeader><EmptyMedia variant="icon">{running ? <LoaderCircle className="animate-spin" /> : state?.status === 'error' || unavailable ? <CircleAlert /> : <Images />}</EmptyMedia>
             <EmptyTitle>{running ? t("正在寻找页面中的图像") : unavailable ? t("换一个网页试试") : state?.status === 'error' ? t("暂时无法读取图像") : noMatches ? t("没有符合条件的图像") : filter === 'large' ? t("未匹配到原图") : t("这页还没有可读取的图像")}</EmptyTitle>
-            <EmptyDescription>{running ? t("链接转换完成后，图像会立即显示。") : unavailable ? t("请在普通网页上打开插件。") : state?.status === 'error' ? translateMessage(state.message) : noMatches ? t("格式与搜索不会改变勾选结果。") : filter === 'large' ? t("当前页面未命中已适配的原图规则。关闭匹配原图模式可查看页面图像。") : t("先在网页中滚动加载图像，再重新分析。")}</EmptyDescription>
+            <EmptyDescription>{running ? t("链接转换完成后，图像会立即显示。") : unavailable ? t("请在普通网页上打开插件。") : state?.status === 'error' ? translateMessage(state.message) : noMatches ? t("格式与搜索不会改变勾选结果。") : filter === 'large' ? t("当前页面未命中已适配的原图规则。关闭匹配原图模式可查看页面图像。") : t("先在网页中滚动加载图像，再重新分析。")}</EmptyDescription></EmptyHeader>
             {!running && !unavailable && (noMatches ? <Button size="sm" variant="outline" onClick={() => { setQuery(''); setExcludedFormats(new Set()); }}>{t("清除筛选")}</Button> : filter === 'large' ? <Button size="sm" variant="outline" onClick={() => chooseOriginalMode(false)}>{t("查看页面图像")}</Button> : <Button size="sm" onClick={() => analyze()}><ScanSearch />{t("提取图像")}</Button>)}
           </Empty>} />
         </section>

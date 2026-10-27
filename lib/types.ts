@@ -1,3 +1,5 @@
+import type { PopupViewState } from './popupViewState';
+
 export interface CollectOptions { css?: boolean; icons?: boolean; inline?: boolean }
 export interface RawImage {
   original?: boolean;
@@ -72,6 +74,7 @@ export interface DownloadBatch {
 }
 export type Request =
   | { type: 'ANALYZE'; tabId: number; mode?: SelectionMode; scroll?: boolean }
+  | { type: 'SAVE_POPUP_VIEW'; tabId: number; view: PopupViewState }
   | { type: 'IMPORT_CAPTURE'; capture: PageCapture }
   | { type: 'HOSTED_ORIGINAL'; job: string; pageUrl: string; url: string }
   | { type: 'SELECT'; job: string; selected: string[]; mode?: SelectionMode; filter?: ImageFilter }

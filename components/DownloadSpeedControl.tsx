@@ -7,16 +7,21 @@ const policies = Object.keys(DOWNLOAD_SPEEDS) as DownloadSpeed[];
 
 export function useDownloadSpeed(preview = false, initialSpeed?: unknown) {
   const [speed, setSpeed] = useState<DownloadSpeed>(() => downloadSpeed(initialSpeed));
+  const revision = useRef(0);
   useEffect(() => {
     if (preview) return;
     let live = true;
+    const readRevision = revision.current;
     function changed(changes: Record<string, chrome.storage.StorageChange>, area: string) {
-      if (area === 'local' && changes[DOWNLOAD_SPEED_KEY]) setSpeed(downloadSpeed(changes[DOWNLOAD_SPEED_KEY]!.newValue));
+      if (live && area === 'local' && changes[DOWNLOAD_SPEED_KEY]) {
+        revision.current++;
+        setSpeed(downloadSpeed(changes[DOWNLOAD_SPEED_KEY]!.newValue));
+      }
     }
     async function read() {
       try {
         const values = await chrome.storage.local.get(DOWNLOAD_SPEED_KEY);
-        if (live) setSpeed(downloadSpeed(values[DOWNLOAD_SPEED_KEY]));
+        if (live && revision.current === readRevision) setSpeed(downloadSpeed(values[DOWNLOAD_SPEED_KEY]));
       } catch { /* keep the default until storage becomes available */ }
     }
     chrome.storage.onChanged.addListener(changed);
@@ -25,8 +30,9 @@ export function useDownloadSpeed(preview = false, initialSpeed?: unknown) {
   }, [preview]);
   async function change(value: string) {
     const next = downloadSpeed(value);
+    const writeRevision = ++revision.current;
     if (!preview) await chrome.storage.local.set({ [DOWNLOAD_SPEED_KEY]: next });
-    setSpeed(next);
+    if (revision.current === writeRevision) setSpeed(next);
   }
   return { speed, change };
 }

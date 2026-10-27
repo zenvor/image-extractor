@@ -18,6 +18,10 @@ export type PopupSnapshot = {
   feedback: string;
 };
 
+export function matchingAnalysis(value: AnalysisState | undefined, page: PopupSnapshot['page']) {
+  return value?.resolverVersion === EXTRACTION_VERSION && value.tabId === page.id && value.url === page.url ? value : undefined;
+}
+
 /** Restore before mounting the workspace, so its first frame contains real data. */
 export async function loadPopupSnapshot(): Promise<PopupSnapshot> {
   if (preview) return {
@@ -42,7 +46,7 @@ export async function loadPopupSnapshot(): Promise<PopupSnapshot> {
       }
     }
     const cached = (session[key] || session[ANALYSIS_KEY]) as AnalysisState | undefined;
-    const analysis = cached?.resolverVersion === EXTRACTION_VERSION && cached.tabId === page.id && cached.url === page.url ? cached : undefined;
+    const analysis = matchingAnalysis(cached, page);
     const restricted = page.id === undefined || !/^https?:\/\//.test(page.url);
     return {
       page, analysis, local,

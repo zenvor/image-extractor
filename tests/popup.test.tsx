@@ -61,6 +61,12 @@ async function openMore() {
   await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
   expect(document.querySelector('[role=menu]')).not.toBeNull();
 }
+async function openExtractionOptions() {
+  const trigger = container.querySelector<HTMLButtonElement>('.collection-options-trigger')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await flushToasts();
+  expect(document.querySelector('.collection-options[role=menu]')).not.toBeNull();
+}
 async function chooseMoreAction(selector: string) {
   await openMore();
   await chooseAction(selector);
@@ -87,6 +93,7 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   request = vi.fn(async () => true);
   send = vi.fn(async (message: Request) => {
+    if (message.type === 'SAVE_POPUP_VIEW') await chrome.storage.session.set({ ['popupView:' + message.tabId]: message.view });
     if (message.type === 'SELECT' && analysis) changed({ ...analysis, selected: message.selected, selectionMode: message.mode || 'custom', selectionFilter: message.filter || analysis.selectionFilter });
     if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh', selected: [], selectionFilter: message.mode === 'large' ? 'large' : 'page' });
     return { ok: true };
@@ -151,6 +158,88 @@ it('renders a preloaded cache and saved controls in its very first workspace fra
   expect(frames[0]).toContain('20 并发');
   expect(frames[0]).toContain('仅页面图像');
   expect(frames[0]).not.toContain('全部启用');
+});
+it.each(['done', 'running'] as const)('reconciles an extraction that became %s after a bootstrap cache miss', async status => {
+  analysis = undefined;
+  const snapshot = await loadPopupSnapshot();
+  expect(snapshot.shouldAnalyze).toBe(true);
+  analysis = { ...fixture(), status };
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await flushToasts();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  expect(analysis.job).toBe('test');
+  if (status === 'done') expectDownloadCount(3);
+  else expect(container.querySelector('.gallery')?.getAttribute('aria-busy')).toBe('true');
+});
+it('ignores a late mismatched analysis event without erasing the current selection', async () => {
+  await mount();
+  await act(async () => { changed({ ...fixture(), job: 'other-page', url: 'https://example.org/other' }); });
+  expectDownloadCount(3);
+  expect(container.querySelectorAll('.image-item')).toHaveLength(3);
+});
+it('reconciles an archive completed between bootstrap and event subscription', async () => {
+  const batch: ArchiveBatch = { id: 'gap', sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  local['archiveBatch:gap'] = batch;
+  chrome.storage.local.get = vi.fn(async () => structuredClone(local)) as typeof chrome.storage.local.get;
+  const snapshot = await loadPopupSnapshot();
+  local['archiveBatch:gap'] = { ...batch, status: 'complete' };
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await flushToasts();
+  expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(false);
+});
+it('lets a newer extraction event win over the bootstrap refresh read', async () => {
+  analysis = undefined;
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  chrome.storage.session.get = vi.fn(() => new Promise<Record<string, unknown>>(resolve => { finish = resolve; })) as typeof chrome.storage.session.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await act(async () => { changed(fixture()); finish({}); });
+  await flushToasts();
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
+  expectDownloadCount(3);
+  expect(container.querySelector('.gallery')?.getAttribute('aria-busy')).toBe('false');
+});
+it.each(['complete', 'removed'] as const)('does not overwrite an archive %s event with an older refresh snapshot', async outcome => {
+  const batch: ArchiveBatch = { id: 'refresh-race', sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  const key = 'archiveBatch:refresh-race';
+  local[key] = batch;
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  chrome.storage.local.get = vi.fn(async keys => keys === null
+    ? new Promise<Record<string, unknown>>(resolve => { finish = resolve; }) : local) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  const notify = vi.spyOn(toast, 'success');
+  await act(async () => {
+    for (const listener of listeners) listener({ [key]: { newValue: outcome === 'complete' ? { ...batch, status: 'complete' } : undefined } }, 'local');
+    finish({ [key]: batch });
+  });
+  await flushToasts();
+  expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(false);
+  expect(notify).toHaveBeenCalledTimes(outcome === 'complete' ? 1 : 0);
+});
+it('reports the resumed task outcome without replaying a newer historical failure', async () => {
+  const base = { sourceTabId: 7, pageUrl: fixture().url, title: 'test', filename: 'test.zip', items: [], updated: Date.now(), bytes: 0, message: '', tabId: 98 };
+  const resumed: ArchiveBatch = { ...base, id: 'old-resumed', started: 100, launched: Date.now(), status: 'fetching' };
+  const historical: ArchiveBatch = { ...base, id: 'later-failure', started: 200, status: 'failed', message: 'Old failure' };
+  local['archiveBatch:old-resumed'] = resumed;
+  local['archiveBatch:later-failure'] = historical;
+  await mount();
+  const success = vi.spyOn(toast, 'success');
+  const error = vi.spyOn(toast, 'error');
+  await act(async () => { for (const listener of listeners) listener({ 'archiveBatch:old-resumed': { newValue: { ...resumed, status: 'complete' } } }, 'local'); });
+  await flushToasts();
+  expect(error).not.toHaveBeenCalled();
+  expect(success).toHaveBeenCalledOnce();
+});
+it('dispatches the latest position before closing even when an earlier save is pending', async () => {
+  await mount();
+  send.mockImplementation(message => message.type === 'SAVE_POPUP_VIEW' ? new Promise(() => {}) : Promise.resolve({ ok: true }));
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 100; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => { scroller.scrollTop = 385; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => root!.unmount()); root = undefined;
+  const writes = send.mock.calls.map(([message]) => message).filter(message => message.type === 'SAVE_POPUP_VIEW');
+  expect(writes.at(-1)).toMatchObject({ type: 'SAVE_POPUP_VIEW', view: { gallery: { scrollTop: 385 } } });
 });
 it('restores search, type exclusions, background, page and scroll position after closing the popup', async () => {
   analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index, url: `https://images.example/photo-${index}.${index === 0 ? 'png' : 'jpg'}` })), selected: ['20'], total: 53 };
@@ -906,48 +995,64 @@ it('persists extraction opt-outs and keeps unset options enabled', async () => {
   local.collectOptions = { css: false };
   await mount();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
-  await click('.collection-options-trigger');
-  const boxes = () => [...document.querySelectorAll<HTMLElement>('.collection-options [role=option]')];
-  expect(boxes().map(box => box.getAttribute('aria-selected'))).toEqual(['true', 'false', 'true']);
+  await openExtractionOptions();
+  const boxes = () => [...document.querySelectorAll<HTMLElement>('.collection-options [role=menuitemcheckbox]')];
+  expect(boxes().map(box => box.getAttribute('aria-checked'))).toEqual(['true', 'false', 'true']);
   await act(async () => boxes()[0]!.click());
   expect(local.collectOptions).toEqual({ icons: false, css: false, inline: true });
   await act(async () => root!.unmount()); root = undefined;
   await mount();
-  await click('.collection-options-trigger');
-  expect(boxes().map(box => box.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
+  await openExtractionOptions();
+  expect(boxes().map(box => box.getAttribute('aria-checked'))).toEqual(['false', 'false', 'true']);
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 1 项');
 });
+it('does not overwrite saved extraction options with a delayed initial read', async () => {
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  const old = new Promise<Record<string, unknown>>(resolve => { finish = resolve; });
+  chrome.storage.local.get = vi.fn(async keys => keys === 'collectOptions' ? old : structuredClone(local)) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
+  expect(local.collectOptions).toEqual({ icons: false, css: true, inline: true });
+  await act(async () => { finish({ collectOptions: { icons: true, css: true, inline: true } }); });
+  expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('false');
+});
+it.each(['interaction', 'storage event'])('does not overwrite a newer download speed from a %s with a delayed read', async source => {
+  const snapshot = await loadPopupSnapshot();
+  let finish!: (value: Record<string, unknown>) => void;
+  const old = new Promise<Record<string, unknown>>(resolve => { finish = resolve; });
+  chrome.storage.local.get = vi.fn(async keys => keys === 'downloadSpeed' ? old : structuredClone(local)) as typeof chrome.storage.local.get;
+  await act(async () => { root = createRoot(container); root.render(<App initialSnapshot={snapshot} />); });
+  if (source === 'interaction') await click('.download-speed-segments [data-slot=toggle-group-item]:last-child');
+  else await act(async () => { for (const listener of listeners) listener({ downloadSpeed: { newValue: 'max' } }, 'local'); });
+  await act(async () => { finish({ downloadSpeed: 'low' }); });
+  expect(container.querySelector('.download-concurrency')?.textContent).toBe('30 并发');
+});
 
-it('supports keyboard selection and Escape in the compact extraction picker', async () => {
+it('supports keyboard selection and Escape in the standard extraction menu', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  const input = document.querySelector<HTMLInputElement>('input[role=combobox][readonly]')!;
-  expect(input).not.toBeNull();
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-  });
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-  });
-  expect(Object.values(local.collectOptions as Record<string, boolean>).filter(Boolean)).toHaveLength(2);
+  await openExtractionOptions();
+  const menu = document.querySelector<HTMLElement>('.collection-options')!;
+  const first = menu.querySelector<HTMLElement>('[role=menuitemcheckbox]')!;
+  expect(document.querySelector('input[role=combobox][readonly]')).toBeNull();
+  first.focus();
+  await act(async () => { first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
+  await flushToasts();
+  expect(local.collectOptions).toEqual({ icons: false, css: true, inline: true });
   expect(document.querySelector('.collection-options')).not.toBeNull();
-  await act(async () => {
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  });
+  await act(async () => { menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(container.querySelector('.collection-options-trigger')?.getAttribute('aria-expanded')).toBe('false');
-  // Base UI retains closed content during its exit transition. Check its actual
-  // open state rather than depending on animation timing in happy-dom.
-  expect(document.querySelector('[data-slot="combobox-content"][data-open]')).toBeNull();
-  const exitingPopup = document.querySelector('.collection-options')?.closest('[data-slot="combobox-content"]');
-  if (exitingPopup) expect(exitingPopup.hasAttribute('data-closed')).toBe(true);
+  expect(document.querySelector('.collection-options[data-state=open]')).toBeNull();
 });
 
 it('does not show an unsaved extraction change as saved', async () => {
   await mount();
   vi.spyOn(chrome.storage.local, 'set').mockRejectedValueOnce(new Error('storage unavailable'));
-  await click('.collection-options-trigger');
-  await chooseAction('.collection-options [role=option]');
-  expect(document.querySelector('.collection-options [role=option]')?.getAttribute('aria-selected')).toBe('true');
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('true');
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('全部启用');
   expect(container.textContent).toContain('无法保存选项，请重试。');
 });
@@ -966,6 +1071,23 @@ it('switches the popup language while preserving search and selection', async ()
     expect(analysis!.selected).toEqual(before);
     expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
   } finally { await act(async () => { await setLanguagePreference('zh-CN'); }); }
+});
+it('changes language through the official Select menu without losing the current results', async () => {
+  vi.stubGlobal('chrome', { ...chrome, runtime: { ...chrome.runtime, id: 'test' } });
+  await mount();
+  const selected = [...analysis!.selected];
+  const trigger = container.querySelector<HTMLElement>('.language-control [data-slot=select-trigger]')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await flushToasts();
+  expect(document.querySelector('[data-slot=select-content][role=listbox]')).not.toBeNull();
+  const english = [...document.querySelectorAll<HTMLElement>('[data-slot=select-item]')].find(item => item.textContent === 'English')!;
+  await act(async () => { english.click(); });
+  await flushToasts();
+  expect(local.interfaceLanguage).toBe('en');
+  expect(container.querySelector('.language-control [data-slot=select-value]')?.textContent).toBe('English');
+  expect(container.querySelector('.visible-count')?.textContent).toBe('Originals: 3');
+  expect(analysis!.selected).toEqual(selected);
+  expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
 });
 
 const resumeCalls = () => send.mock.calls.filter(([message]) => message.type === 'RESUME_DOWNLOADS');
@@ -1035,31 +1157,27 @@ it('requests recovery on a restricted page too, where there is nothing to analys
 
 it('allows every extraction option to be turned off and back on independently', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  for (let i = 0; i < 3; i++) await chooseAction(`.collection-options [role=option]:nth-child(${i + 1})`);
+  await openExtractionOptions();
+  for (let i = 0; i < 3; i++) await chooseAction(`.collection-options [role=menuitemcheckbox]:nth-child(${i + 1})`);
   expect(local.collectOptions).toEqual({ icons: false, css: false, inline: false });
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('仅页面图像');
   expect(document.querySelector('.collection-options')).not.toBeNull();
-  await chooseAction('.collection-options [role=option]:nth-child(2)');
+  await chooseAction('.collection-options [role=menuitemcheckbox]:nth-child(2)');
   expect(local.collectOptions).toEqual({ icons: false, css: true, inline: false });
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
 });
 
 it('closes extraction settings with Escape and preserves the saved summary', async () => {
   await mount();
-  await click('.collection-options-trigger');
-  await chooseAction('.collection-options [role=option]');
+  await openExtractionOptions();
+  await chooseAction('.collection-options [role=menuitemcheckbox]');
   const checkbox = container.querySelector<HTMLElement>('.collection-options-trigger')!;
   await act(async () => { checkbox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(container.querySelector('.collection-options-trigger')?.getAttribute('aria-expanded')).toBe('false');
-  // Official exit animations may retain a closed popup until animationend.
-  // Assert its interactive state instead of happy-dom's animation timing.
-  expect(document.querySelector('[data-slot=combobox-content][data-open]')).toBeNull();
-  const exitingPopup = document.querySelector('[data-slot=combobox-content]');
-  if (exitingPopup) expect(exitingPopup.hasAttribute('data-closed')).toBe(true);
+  expect(document.querySelector('.collection-options[data-state=open]')).toBeNull();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
-  await click('.collection-options-trigger');
-  expect(document.querySelector('[data-slot=combobox-content][data-open] [role=option]')?.getAttribute('aria-selected')).toBe('false');
+  await openExtractionOptions();
+  expect(document.querySelector('.collection-options [role=menuitemcheckbox]')?.getAttribute('aria-checked')).toBe('false');
 });
 
 it('ignores cached automatic selections but preserves explicit user choices', async () => {

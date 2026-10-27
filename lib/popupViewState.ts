@@ -20,6 +20,7 @@ export function readPopupView(value: unknown, job: string): PopupViewState | und
     query: typeof saved.query === 'string' ? saved.query : '',
     excludedFormats: Array.isArray(saved.excludedFormats) ? saved.excludedFormats.filter(format => imageFormats.includes(format)) : [],
     darkPreview: saved.darkPreview === true,
-    gallery: gallery && typeof gallery.results === 'string' && Number.isInteger(gallery.page) && gallery.page >= 0 && Number.isFinite(gallery.scrollTop) && gallery.scrollTop >= 0 ? gallery : undefined,
+    gallery: gallery && typeof gallery.results === 'string' && Number.isInteger(gallery.page) && gallery.page >= 0 && Number.isFinite(gallery.scrollTop) && gallery.scrollTop >= 0
+      ? { results: gallery.results, page: gallery.page, scrollTop: gallery.scrollTop } : undefined,
   };
 }

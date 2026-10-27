@@ -1,7 +1,8 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import type { AnalysisState, DownloadBatch, Request } from '../lib/types';
+import type { PopupViewState } from '../lib/popupViewState';
 
-let saved: { [key: `analysis:${number}`]: AnalysisState | undefined; downloadBatch?: DownloadBatch };
+let saved: { [key: `analysis:${number}`]: AnalysisState | undefined; [key: `popupView:${number}`]: PopupViewState | undefined; downloadBatch?: DownloadBatch };
 let handler: (message: Request, sender: { id: string }, response: (result: unknown) => void) => boolean;
 let updated: (id: number, change: { status: string }) => void;
 const capture = { url: 'https://example.org/', baseUrl: 'https://example.org/', title: 'Landscapes', total: 1, truncated: false, challenged: false, images: [{ source: '/landscape.jpg', alt: 'Landscape', width: 640, height: 400, declared: ['/full.jpg'], srcsets: [], link: '' }] };
@@ -190,6 +191,39 @@ it('reports challenge pages without exporting images', async () => {
   expect(saved['analysis:1']!.status).toBe('error');
   expect(saved['analysis:1']!.results).toEqual([]);
   expect(saved['analysis:1']!.message).toContain('验证');
+});
+it('orders popup state writes independently of popup lifetime and rejects superseded jobs', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const job = saved['analysis:1']!.job;
+  const view: PopupViewState = { job, query: '', excludedFormats: [], darkPreview: false, gallery: { results: 'results', page: 0, scrollTop: 100 } };
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const originalSet = chrome.storage.session.set;
+  let blocked = false;
+  chrome.storage.session.set = vi.fn(async (values: Record<string, unknown>) => {
+    if ((values['popupView:1'] as PopupViewState)?.gallery?.scrollTop === 100) { blocked = true; await gate; }
+    await originalSet(values);
+  });
+  const first = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view });
+  await vi.waitFor(() => expect(blocked).toBe(true));
+  const latest = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: { ...view, gallery: { ...view.gallery!, scrollTop: 385 } } });
+  release();
+  expect(await first).toEqual({ ok: true });
+  expect(await latest).toEqual({ ok: true });
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+  await restartWorker();
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  expect(await send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view })).toMatchObject({ ok: false });
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(385);
+});
+it('does not restore a queued popup view after its tab navigates', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const view: PopupViewState = { job: saved['analysis:1']!.job, query: 'old', excludedFormats: [], darkPreview: false };
+  updated(1, { status: 'loading' });
+  expect(await send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view })).toMatchObject({ ok: false });
+  expect(saved['analysis:1']).toBeUndefined();
+  expect(saved['popupView:1']).toBeUndefined();
 });
 it('invalidates previous results when the tab reloads', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
