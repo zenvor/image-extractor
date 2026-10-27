@@ -442,6 +442,28 @@ it('legacy DOWNLOAD starts only known ids once, in result order', async () => {
   expect(await send({ type: 'DOWNLOAD', job: saved['analysis:1']!.job, selected: ['e', 'c', 'c', 'nope', 'a'] })).toEqual({ ok: true });
   expect(saved.downloadBatch?.jobs.map(job => job.url)).toEqual(['a', 'c', 'e'].map(id => `https://images.example.org/${id}.jpg`));
 });
+it('downloads one known image directly and permits another native download without an archive or queue', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const state = seedResults();
+  const { download } = await grantDownloads();
+  chrome.tabs.create = vi.fn();
+  const before = [...state.selected];
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['a', 'a', 'unknown'] })).toMatchObject({ ok: true, downloadId: 1 });
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['b'] })).toMatchObject({ ok: true, downloadId: 2 });
+  expect(download).toHaveBeenNthCalledWith(1, { url: state.results[0]!.url, conflictAction: 'uniquify', saveAs: false });
+  expect(download).toHaveBeenNthCalledWith(2, { url: state.results[1]!.url, conflictAction: 'uniquify', saveAs: false });
+  expect(chrome.tabs.create).not.toHaveBeenCalled();
+  expect(saved.downloadBatch).toBeUndefined();
+  expect(state.selected).toEqual(before);
+});
+it('reports a native image download failure without creating an archive task', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const state = seedResults();
+  const { download } = await grantDownloads();
+  download.mockRejectedValueOnce(new Error('native download rejected'));
+  expect(await send({ type: 'DOWNLOAD', job: state.job, selected: ['a'] })).toEqual({ ok: false, message: 'native download rejected' });
+  expect(saved.downloadBatch).toBeUndefined();
+});
 it('page downloads exclude generated URLs and number actual URLs in page discovery order', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
   const state = seedResults(['original', 'thumb', 'photo']);

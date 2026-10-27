@@ -7,7 +7,7 @@ import { collectPage } from '../lib/collect';
 import { resolveImages, resolveImagesWithDiagnostics } from '../lib/resolve';
 import { EXTRACTION_VERSION as ORIGINAL_RESOLVER_VERSION } from '../lib/extractionVersion';
 import type { AnalysisState, ImageResult, Request, SelectionMode } from '../lib/types';
-import { advanceDownloads, failDownloads, startDownloads } from '../lib/downloads';
+import { advanceDownloads, downloadSingleImage, failDownloads, startDownloads } from '../lib/downloads';
 import { withTimeout } from '../lib/timeout';
 import { analysisFilter, defaultImageFilter, filterImageResults, selectBySize } from '../lib/selection';
 import { resumeArchive, retryArchive, startArchive, interruptArchive, recoverArchive, pruneArchives, openArchivePage } from '../lib/archiveState';
@@ -185,7 +185,7 @@ export default defineBackground(() => {
           respond({ ok: true, ...created! });
           return;
         } else if (message.type === 'DOWNLOAD' || message.type === 'DOWNLOAD_ZIP') {
-          let created: { batchId: string; tabId?: number } | undefined;
+          let created: { batchId?: string; tabId?: number; downloadId?: number } | undefined;
           await orderedDownload(async () => {
             const state = await findAnalysis(message.job);
             if (state?.job !== message.job || state.status !== 'done' || !Array.isArray(message.selected)) throw new Error('结果已变化，请重新选择图像。');
@@ -195,6 +195,7 @@ export default defineBackground(() => {
             const scope = filterImageResults(state.results, analysisFilter(state), '');
             const selected = selectedResults(scope, message.selected).map(item => pageMode ? { ...item, candidate: false } : item);
             if (message.type === 'DOWNLOAD_ZIP') created = await startArchive(selected, state.title || '', state.url, state.tabId, state.sourceUrl);
+            else if (selected.length === 1) created = { downloadId: await downloadSingleImage(selected[0]!) };
             else await startDownloads(selected, state.url);
           });
           respond({ ok: true, ...created }); return;

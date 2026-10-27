@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-26. Source/GitHub release version: 1.1.0. Submitted store version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
+Last updated: 2026-10-27. Source/GitHub release version: 1.1.0. Submitted store version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
 
 ## Store listing
 
@@ -130,6 +130,36 @@ Dashboard: https://chrome.google.com/webstore/devconsole/82288fad-14d3-4394-9d40
 Store item ID: ndeaeajbbikgkghamnlmckbiocdfmonp. Submission screenshot retained locally under .output-staged/store-assets/submission-confirmed.jpg. No scheduled monitoring created.
 
 ## Version 1.1.0: forum image-detail lookup (2026-10-26)
+
+Unreleased UI fix (2026-10-26): use the shared form component for the image-format filter and image search, with matching text size, horizontal padding, borders and shadows. Use small sidebar buttons, default form and filter Badge sizing, and the large variant for the main download button. Preserve the established image-card control sizes. Keep the same single-row height with tags or the empty placeholder when toggling original matching. Format tags retain their appearance on hover, including when excluded. Refresh localized popup screenshots with the next Store submission.
+
+Card appearance correction: preserve the original card badges, action sizes and circular selection control. Unselected controls appear on card hover or keyboard focus; selected controls stay visible, with scale and checkmark entrance animations matching the Web project's interaction.
+
+Selection controls use an 18px circle and 12px checkmark. The circle's center sits 4px inside the thumbnail's top-left corner, matching crawler-web ImageCard's placement proportionally after reducing its 28px circle to 18px. Only the image content clips overflow, keeping the selection circle visible outside the thumbnail.
+
+Selected cards use a 2px theme-colored border directly on the card, without a halo or offset gap. Selected and unselected cards share the same ordinary shadows, white padding and image geometry. Cards retain 16px spacing.
+
+Grid and list cards use compact 10px padding in both selection states. The image's left edge is 12px from the card's outer edge including its 2px border.
+
+Removed the image enlargement button and modal. Cards retain thumbnails, selection, URL copying and downloads; users can use the browser's image context menu or open copied URLs themselves. Sidebar format tags use rectangular shapes with 4px corner radii instead of pill shapes.
+
+Sidebar wording now uses "Filter images by type", "Download speed" and "Extraction scope". Five single-selection segments replace the download-speed slider; compact labels and a concurrency-only summary avoid repeated preset names and wrapping. Download admission limits and saved preset keys are unchanged.
+
+The format filter uses 8px padding and grows naturally as its tags wrap, without an internal scrollbar. Its empty state reserves the same 38px minimum height as a single tag row. Compact 20px tags use 11px text and 4px corners. The English high preset is written "xhigh". The sidebar no longer scrolls; its compact two-column actions keep copying, exporting and scroll extraction visible, with batch/HTML tools, download tasks and recovery actions in the More menu.
+
+The image gallery hides its scrollbar while retaining mouse-wheel, trackpad and keyboard scrolling in grid and list views.
+
+Excluding an image type no longer adds a Reset button beside the filter heading, keeping the sidebar heading height stable. Types can be re-enabled by clicking their tags again.
+
+The popup uses temporary toast notifications for download starts and results instead of a permanent status, progress bar or Details link beside the Download heading. Progress updates do not create repeated notifications, and reopening the popup does not replay old task results. Detailed progress and recovery remain available under More → Download task. Other popup feedback uses the same dismissible notifications.
+
+Single-image downloads from a card or a one-image selection save the image itself through Chrome Downloads, without creating a ZIP or opening an archive task page. Remote names and types are determined by Chrome and the server response; inline images receive a safe filename with their image extension. Only the downloads permission is requested for this direct path. Multi-image popup selections retain ZIP creation, retries and recovery.
+
+The gallery displays at most 20 images per page. Every card on the current page is rendered immediately; scrolling only triggers native lazy loading of its thumbnail, without mounting or unmounting cards. Compact previous/next controls and a page fraction sit beside the image count in the fixed top toolbar, leaving no separate pagination footer. Selections survive page changes. Select all continues to select all matching images across pages. Up to three visited pages retain their image elements and load/error state; older pages are released. The gallery still loads page thumbnails rather than fetching converted originals for previews.
+
+Reopening the popup reuses the current tab’s session-cached extraction and explicit selections. Startup restores the active tab snapshot, saved view and preferences before mounting the workspace, so a completed cache does not first render as Extracting, zero images or empty type filters. Locale restoration runs in parallel. Real cache misses still trigger extraction automatically. Search, excluded image types, preview background, pagination and scroll position are now restored for the same extraction. Navigation, tab closure or a new extraction invalidates the associated view state. Already decoded thumbnails use the browser image cache without showing a fresh loading skeleton. No additional permissions or external storage are used.
+
+2026-10-27 theme refinement: restore the original black/white/gray surfaces with purple accents (#5d5fef) for selected cards, selection indicators, progress and focus. Buttons use shadcn's neutral primary and secondary colors; download-speed segments stay black. The logo artwork stays purple and image-format badges retain their category colors. Component sizes, spacing and corner radii are unchanged.
 
 Version 1.1.0 resolves individual external image-detail links on ViperGirls pages and accessible mirrors for eleven provider families; see docs/hosted-images.md. Optional access to the relevant image-host origins is requested when original matching is enabled. Detail-page HTML is read locally to locate image URLs; remote scripts are not executed. Original discovery therefore may contact a selected source image host before preview or download. There is no new developer endpoint, analytics, login service or manufactured verification cookie. Manifest permissions are unchanged.
 

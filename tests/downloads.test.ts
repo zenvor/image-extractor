@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { advanceDownloads, batchActive, downloadFilename, readBatch, startDownloads } from '../lib/downloads';
+import { advanceDownloads, batchActive, downloadFilename, downloadSingleImage, readBatch, startDownloads } from '../lib/downloads';
 import { selectBySize } from '../lib/selection';
 import type { DownloadBatch, ImageResult } from '../lib/types';
 
@@ -81,5 +81,26 @@ describe('durable browser download queue', () => {
   it('rejects duplicate batches while downloads are running', async () => {
     await startDownloads(results, 'https://example.org/');
     await expect(startDownloads(results, 'https://example.org/')).rejects.toThrow('已有下载');
+  });
+});
+
+describe('single image native downloads', () => {
+  it('hands the original URL to Chrome without a ZIP, blob or a forced remote filename', async () => {
+    expect(await downloadSingleImage({ ...results[0]!, source: 'https://example.org/thumb.jpg' })).toBe(1);
+    expect(download).toHaveBeenCalledExactlyOnceWith({ url: results[0]!.url, conflictAction: 'uniquify', saveAs: false });
+    expect(stored.downloadBatch).toBeUndefined();
+  });
+  it('gives inline SVG a safe image filename', async () => {
+    const url = 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22/%3E';
+    await downloadSingleImage({ ...results[0]!, url, label: '../inline.svg' });
+    expect(download).toHaveBeenCalledWith({ url, filename: 'inline.svg', conflictAction: 'uniquify', saveAs: false });
+  });
+  it.each(['javascript:alert(1)', 'data:text/html;base64,AA==', 'https://user:password@example.org/a.jpg'])('rejects an unsafe image URL without starting a download: %s', async url => {
+    await expect(downloadSingleImage({ ...results[0]!, url })).rejects.toThrow('图像地址无效');
+    expect(download).not.toHaveBeenCalled();
+  });
+  it('propagates native download initiation failures', async () => {
+    download.mockRejectedValueOnce(new Error('network unavailable'));
+    await expect(downloadSingleImage(results[0]!)).rejects.toThrow('network unavailable');
   });
 });

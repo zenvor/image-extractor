@@ -7,10 +7,10 @@ import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
 
-export function ExtractionOptions({ preview }: { preview: boolean }) {
+export function ExtractionOptions({ preview, initialOptions }: { preview: boolean; initialOptions?: CollectOptions }) {
   const id = useId();
-  const [options, setOptions] = useState(normalizeCollectOptions);
-  const [ready, setReady] = useState(preview);
+  const [options, setOptions] = useState(() => normalizeCollectOptions(initialOptions));
+  const [ready, setReady] = useState(preview || initialOptions !== undefined);
   const [saving, setSaving] = useState(false);
   const [showNavigationHighlight, setShowNavigationHighlight] = useState(false);
   const pending = useRef(false);
@@ -40,24 +40,24 @@ export function ExtractionOptions({ preview }: { preview: boolean }) {
   const summary = selected.length === 3 ? t('全部启用') : selected.length === 0 ? t('仅页面图像') : t('已选 {0} 项', [selected.length]);
 
   return <section className="sidebar-group" aria-labelledby={`${id}-title`}>
-    <h3><Label id={`${id}-title`} htmlFor={`${id}-trigger`}>{t('其他图像来源')}</Label></h3>
+    <h3><Label id={`${id}-title`} htmlFor={`${id}-trigger`}>{t('采集范围')}</Label></h3>
     <Combobox multiple value={selected} onValueChange={value => void change(value)} disabled={!ready}
       onOpenChange={(open, details) => setShowNavigationHighlight(open && details.event.type === 'keydown')}
       onItemHighlighted={(_, details) => {
         if (details.reason === 'keyboard' || details.reason === 'pointer') setShowNavigationHighlight(true);
       }}>
-      <ComboboxTrigger id={`${id}-trigger`} className="collection-options-trigger w-full justify-between font-normal" render={<Button variant="outline" size="sm" />} aria-labelledby={`${id}-title ${id}-summary`}>
+      <ComboboxTrigger id={`${id}-trigger`} className="collection-options-trigger w-full justify-between font-normal" render={<Button size="sm" variant="outline" />} aria-labelledby={`${id}-title ${id}-summary`}>
         <span id={`${id}-summary`}><ComboboxValue>{summary}</ComboboxValue></span>
       </ComboboxTrigger>
       <ComboboxContent aria-labelledby={`${id}-title`} aria-describedby={`${id}-hint`}>
         {/* Read-only navigation input keeps the compact picker keyboard-accessible. */}
-        <ComboboxChipsInput className="sr-only min-w-0" readOnly aria-label={t('其他图像来源')} />
+        <ComboboxChipsInput className="sr-only min-w-0" readOnly aria-label={t('采集范围')} />
         <ComboboxList className="collection-options" onPointerMove={() => setShowNavigationHighlight(true)}>
           {entries.map(item => <ComboboxItem key={item.value} value={item.value} disabled={saving}
             className={showNavigationHighlight ? undefined : 'data-highlighted:bg-transparent data-highlighted:text-foreground'}>{item.label}</ComboboxItem>)}
         </ComboboxList>
         <Separator />
-        <p className="px-3 py-2 text-xs text-muted-foreground" id={`${id}-hint`}>{t('页面图像始终提取；其他来源重新提取后生效。')}</p>
+        <p className="px-3 py-2 text-xs text-muted-foreground" id={`${id}-hint`}>{t('页面图像始终包含；修改后重新提取生效。')}</p>
       </ComboboxContent>
     </Combobox>
     {message && <p role="status" className="error text-xs">{translateMessage(message)}</p>}
