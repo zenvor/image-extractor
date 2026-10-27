@@ -192,6 +192,29 @@ it('reports challenge pages without exporting images', async () => {
   expect(saved['analysis:1']!.results).toEqual([]);
   expect(saved['analysis:1']!.message).toContain('验证');
 });
+it('coalesces a burst of popup scroll saves without losing the final position', async () => {
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const view: PopupViewState = { job: saved['analysis:1']!.job, query: '', excludedFormats: [], darkPreview: false };
+  const get = vi.spyOn(chrome.storage.session, 'get');
+  const set = vi.spyOn(chrome.storage.session, 'set');
+  await Promise.all(Array.from({ length: 60 }, (_, scrollTop) => send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: { ...view, gallery: { results: 'results', page: 0, scrollTop } } })));
+  expect(saved['popupView:1']?.gallery?.scrollTop).toBe(59);
+  expect(get).toHaveBeenCalledTimes(1);
+  expect(set).toHaveBeenCalledTimes(1);
+});
+it('keeps pending view batches separate across extraction jobs', async () => {
+  vi.useFakeTimers();
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const oldView: PopupViewState = { job: saved['analysis:1']!.job, query: 'old', excludedFormats: [], darkPreview: false };
+  const oldSave = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: oldView });
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const newView = { ...oldView, job: saved['analysis:1']!.job, query: 'new' };
+  const newSave = send({ type: 'SAVE_POPUP_VIEW', tabId: 1, view: newView });
+  await vi.advanceTimersByTimeAsync(100);
+  expect(await oldSave).toMatchObject({ ok: false });
+  expect(await newSave).toEqual({ ok: true });
+  expect(saved['popupView:1']).toMatchObject({ job: newView.job, query: 'new' });
+});
 it('orders popup state writes independently of popup lifetime and rejects superseded jobs', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
   const job = saved['analysis:1']!.job;

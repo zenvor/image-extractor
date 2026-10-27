@@ -93,6 +93,7 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   request = vi.fn(async () => true);
   send = vi.fn(async (message: Request) => {
+    if (message.type === 'LOAD_POPUP_VIEW') return { ok: true, view: popupSession['popupView:' + message.tabId] };
     if (message.type === 'SAVE_POPUP_VIEW') await chrome.storage.session.set({ ['popupView:' + message.tabId]: message.view });
     if (message.type === 'SELECT' && analysis) changed({ ...analysis, selected: message.selected, selectionMode: message.mode || 'custom', selectionFilter: message.filter || analysis.selectionFilter });
     if (message.type === 'ANALYZE') changed({ ...fixture(), job: 'fresh', selected: [], selectionFilter: message.mode === 'large' ? 'large' : 'page' });
@@ -240,6 +241,24 @@ it('dispatches the latest position before closing even when an earlier save is p
   await act(async () => root!.unmount()); root = undefined;
   const writes = send.mock.calls.map(([message]) => message).filter(message => message.type === 'SAVE_POPUP_VIEW');
   expect(writes.at(-1)).toMatchObject({ type: 'SAVE_POPUP_VIEW', view: { gallery: { scrollTop: 385 } } });
+});
+it('restores the last position when reopened inside the worker coalescing window', async () => {
+  const { persistPopupView, readSavedPopupView } = await import('../lib/popupViewPersistence');
+  const originalSend = send.getMockImplementation() as (message: Request) => Promise<{ ok: boolean }>;
+  send.mockImplementation(async message => {
+    if (message.type === 'SAVE_POPUP_VIEW') { await persistPopupView(message.tabId, message.view); return { ok: true }; }
+    if (message.type === 'LOAD_POPUP_VIEW') return { ok: true, view: await readSavedPopupView(message.tabId, message.job) };
+    return originalSend(message);
+  });
+  await mount();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)); });
+  const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
+  await act(async () => { scroller.scrollTop = 385; scroller.dispatchEvent(new Event('scroll')); });
+  await act(async () => root!.unmount()); root = undefined;
+  await mount();
+  expect(container.querySelector<HTMLDivElement>('.image-list')?.scrollTop).toBe(385);
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)); });
+  expect(popupSession['popupView:7']).toMatchObject({ gallery: { scrollTop: 385 } });
 });
 it('restores search, type exclusions, background, page and scroll position after closing the popup', async () => {
   analysis = { ...fixture(), results: Array.from({ length: 53 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index, url: `https://images.example/photo-${index}.${index === 0 ? 'png' : 'jpg'}` })), selected: ['20'], total: 53 };

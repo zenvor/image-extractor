@@ -2,7 +2,7 @@ import { ANALYSIS_KEY, analysisKey } from '../../lib/analysisState';
 import { EXTRACTION_VERSION } from '../../lib/extractionVersion';
 import { popupViewKey, readPopupView, type PopupViewState } from '../../lib/popupViewState';
 import { ARCHIVE_KEY } from '../../lib/archiveState';
-import type { AnalysisState } from '../../lib/types';
+import type { AnalysisState, Request } from '../../lib/types';
 import { previewArchive, previewNotice, previewState } from './preview';
 
 export const workspace = new URLSearchParams(location.search).has('workspace');
@@ -48,9 +48,16 @@ export async function loadPopupSnapshot(): Promise<PopupSnapshot> {
     const cached = (session[key] || session[ANALYSIS_KEY]) as AnalysisState | undefined;
     const analysis = matchingAnalysis(cached, page);
     const restricted = page.id === undefined || !/^https?:\/\//.test(page.url);
+    let view = analysis ? readPopupView(session[popupViewKey(analysis.tabId)], analysis.job) : undefined;
+    if (analysis?.status === 'done') {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'LOAD_POPUP_VIEW', tabId: analysis.tabId, job: analysis.job } satisfies Request);
+        if (response?.ok) view = readPopupView(response.view, analysis.job);
+      } catch { /* Older workers can still restore the stored snapshot. */ }
+    }
     return {
       page, analysis, local,
-      view: analysis ? readPopupView(session[popupViewKey(analysis.tabId)], analysis.job) : undefined,
+      view,
       unavailable: restricted && !workspace,
       shouldAnalyze: !restricted && !analysis,
       feedback: '',

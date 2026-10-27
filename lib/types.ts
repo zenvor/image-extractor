@@ -75,6 +75,7 @@ export interface DownloadBatch {
 export type Request =
   | { type: 'ANALYZE'; tabId: number; mode?: SelectionMode; scroll?: boolean }
   | { type: 'SAVE_POPUP_VIEW'; tabId: number; view: PopupViewState }
+  | { type: 'LOAD_POPUP_VIEW'; tabId: number; job: string }
   | { type: 'IMPORT_CAPTURE'; capture: PageCapture }
   | { type: 'HOSTED_ORIGINAL'; job: string; pageUrl: string; url: string }
   | { type: 'SELECT'; job: string; selected: string[]; mode?: SelectionMode; filter?: ImageFilter }
