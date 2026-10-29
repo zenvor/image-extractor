@@ -1,5 +1,11 @@
 # Release notes
 
+## [1.2.0 — Smoother image browsing and clearer downloads](releases/1.2.0.md)
+
+Preserved results during lazy loading, steady selections across 21-image pages, streamlined popup actions, and a refined download task list with failure-detail dialogs.
+
+[GitHub release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.2.0)
+
 ## [1.1.0 — Original images from forum links](releases/1.1.0.md)
 
 Image-detail lookup for eleven image-host families used by ViperGirls, with optional site access, saved matches and shared request limits.

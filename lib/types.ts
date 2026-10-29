@@ -45,6 +45,7 @@ export interface AnalysisState {
   unresolvedCount?: number;
   job: string;
   resolverVersion?: string;
+  documentId?: string;
   tabId: number;
   url: string;
   status: 'running' | 'done' | 'error';

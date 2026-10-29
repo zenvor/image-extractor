@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-27. Source/GitHub release version: 1.1.0. Submitted store version: 1.0.0. Status: submitted; Pending review; automatic publication enabled.
+Last updated: 2026-10-29. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
 
 ## Store listing
 
@@ -84,7 +84,7 @@ Publisher display name currently: luckxiaomi@gmail.com. Publisher ID: 82288fad-1
 
 Public contact email: luckxiaomi@gmail.com (public use authorized by the user).
 
-Homepage/support URL: pending public destination. Repository is currently private; do not advertise it as accessible support.
+Homepage/support URL: https://github.com/zenvor/image-extractor-extension. The repository is public; support requests can be opened in its Issues section.
 
 Planned distribution: free, public. Confirm country/region settings in dashboard.
 
@@ -102,6 +102,7 @@ Planned distribution: free, public. Confirm country/region settings in dashboard
 
 | Version | Date | Changes | Status |
 | --- | --- | --- | --- |
+| 1.2.0 | 2026-10-29 | Preserve extracted results during lazy loading and scroll extraction; show 21 images per page without replaying selection animations; constrain tall and failed previews; streamline extraction, clipboard, export and language controls; refine rounded surfaces, hover feedback and checkbox contrast; keep settings stable while saving; improve download summaries, progress and failure-detail dialogs | Prepared for GitHub release; no new permissions; refresh popup and download-page screenshots before Store submission |
 | 1.1.0 | 2026-10-26 | Eleven image-host provider families for forum original lookup; optional detail access, cancellation and shared budgets | GitHub 1.1.0; not submitted to Chrome Web Store |
 | 1.0.0 | 2026-10-25 | First stable release; free extraction, supported original matching and ZIP downloads | Pending review; auto-publish enabled |
 

@@ -11,7 +11,6 @@ export function ExtractionOptions({ preview, initialOptions }: { preview: boolea
   const id = useId();
   const [options, setOptions] = useState(() => normalizeCollectOptions(initialOptions));
   const [ready, setReady] = useState(preview || initialOptions !== undefined);
-  const [saving, setSaving] = useState(false);
   const pending = useRef(false);
   const revision = useRef(0);
   const [message, setMessage] = useState('');
@@ -33,14 +32,14 @@ export function ExtractionOptions({ preview, initialOptions }: { preview: boolea
 
   async function change(key: keyof CollectOptions, checked: boolean) {
     if (!ready || pending.current) return;
-    pending.current = true; setSaving(true); setMessage('');
+    pending.current = true; setMessage('');
     const writeRevision = ++revision.current;
     const next = { ...options, [key]: checked };
     try {
       if (!preview) await chrome.storage.local.set({ collectOptions: next });
       if (revision.current === writeRevision) setOptions(next);
     } catch { setMessage(t('无法保存选项，请重试。')); }
-    finally { pending.current = false; setSaving(false); }
+    finally { pending.current = false; }
   }
 
   const entries = [{ value: 'icons', label: t('网站图标') }, { value: 'css', label: t('背景图像') }, { value: 'inline', label: t('内嵌图像与 SVG') }] as const;
@@ -56,7 +55,7 @@ export function ExtractionOptions({ preview, initialOptions }: { preview: boolea
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="collection-options w-[var(--radix-dropdown-menu-trigger-width)]" align="start" aria-labelledby={`${id}-title`} aria-describedby={`${id}-hint`}>
-        {entries.map(item => <DropdownMenuCheckboxItem key={item.value} checked={options[item.value]} disabled={saving}
+        {entries.map(item => <DropdownMenuCheckboxItem key={item.value} checked={options[item.value]}
           onCheckedChange={checked => void change(item.value, checked === true)} onSelect={event => event.preventDefault()}>
           {item.label}
         </DropdownMenuCheckboxItem>)}

@@ -11,6 +11,7 @@ const sceneLabels = ['山间晨光', '海岸线', '森林小径', '湖面倒影'
 const samples = fitPreview ? [
   { label: '宽幅全景', filename: 'panorama.svg', source: '/preview/fit-panorama.svg' },
   { label: '竖幅插画', filename: 'portrait.svg', source: '/preview/fit-portrait.svg' },
+  { label: '超长竖图', filename: 'tall.svg', source: '/preview/fit-tall.svg' },
   { label: '16px 小图标', filename: 'icon-16.png', source: '/icons/16.png' },
   { label: '方形图标', filename: 'icon-128.png', source: '/icons/128.png' },
 ] : sceneLabels.map((label, index) => ({ label, filename: 'landscape-' + index + '.jpg', source: '/preview/scene-' + (index + 1) + '.svg' }));
