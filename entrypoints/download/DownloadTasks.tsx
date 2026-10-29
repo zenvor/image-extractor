@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, ListTodo, LoaderCircle, Play, RotateCw, Square, ExternalLink } from 'lucide-react';
+import { AlertCircle, Check, FileArchive, FolderOpen, Gauge, ListTodo, LoaderCircle, Play, RotateCw, Square, ExternalLink } from 'lucide-react';
 import { Brand } from '../../components/Brand';
 import { useDownloadSpeed } from '../../components/DownloadSpeedControl';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
 import { ArchiveProgress, ArchiveProgressLegend } from '../../components/ArchiveProgress';
 import { useLocale } from '../../lib/useLocale';
 import { t, translateMessage } from '../../lib/i18n';
@@ -16,12 +17,6 @@ import { archiveFeedback } from '../../lib/archiveFeedback';
 import { requestArchiveRetry, requestArchiveResume } from '../../lib/requestArchiveRetry';
 import type { ArchiveBatch } from '../../lib/types';
 
-function issueSummary(error?: string) {
-  if (/HTTP\s*(429|503)/i.test(error || '')) return t('网站繁忙或请求受限，可稍后重试。');
-  if (/timeout|timed out|超时/i.test(error || '')) return t('图像请求超时，可稍后重试。');
-  return t('部分图像无法获取，原因见下载结果。');
-}
-
 function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
   const controller = useRef<AbortController | undefined>(undefined);
   const [error, setError] = useState('');
@@ -31,7 +26,7 @@ function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
   const feedback = archiveFeedback(batch);
   const resumable = canResumeArchive(batch);
   const failures = batch.items.filter(item => item.status === 'failed');
-  const firstFailure = failures[0]?.error;
+  const taskDetail = batch.status === 'failed' || batch.status === 'cancelled' ? feedback.detail : '';
   const source = batch.sourceUrl || (batch.pageUrl.startsWith('chrome-extension:') ? t('本地 HTML：{0}', [batch.title]) : batch.pageUrl);
 
   useEffect(() => {
@@ -67,32 +62,50 @@ function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
   }
   return <TableRow role="row" aria-labelledby={`task-${batch.id}`} data-task-id={batch.id}>
     <TableCell role="cell" headers="tasks-source" className="task-identity">
-      <h2 id={`task-${batch.id}`} className="task-row-title" title={batch.title || batch.filename}>{batch.title || batch.filename}</h2>
-      <p className="break-all text-xs text-muted-foreground" title={source}>{source}</p>
-      <p className="mt-1 break-all text-xs text-muted-foreground">{batch.filename}</p>
-      {batch.retryOf && <p className="text-xs text-muted-foreground">{t('补充下载任务')}</p>}
+      <div className="task-identity-content">
+        <span className="task-file-icon" aria-hidden="true"><FileArchive /></span>
+        <div className="min-w-0">
+          <h2 id={`task-${batch.id}`} className="task-row-title" title={batch.title || batch.filename}>{batch.title || batch.filename}</h2>
+          <p className="truncate text-xs text-muted-foreground" title={source}>{source}</p>
+          <p className="task-filename mt-1 truncate text-xs text-muted-foreground" title={batch.filename}>{batch.filename}</p>
+          {batch.retryOf && <p className="text-xs text-muted-foreground">{t('补充下载任务')}</p>}
+        </div>
+      </div>
     </TableCell>
     <TableCell role="cell" headers="tasks-progress" className="task-progress">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <Badge variant={feedback.tone}>{active && <LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" />}{feedback.title}</Badge>
+        <Badge variant={feedback.tone} className="task-state" data-tone={feedback.tone}>
+          {active ? <LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" /> : feedback.warning ? <AlertCircle aria-hidden="true" /> : batch.status === 'complete' ? <Check aria-hidden="true" /> : null}
+          {feedback.title}
+        </Badge>
         <span className="text-xs tabular-nums text-muted-foreground">{t('{0} / {1} 张已处理', [feedback.processed, feedback.total])}</span>
       </div>
       <ArchiveProgress feedback={feedback} status={batch.status} label={t('{0} 的图像处理进度', [batch.title || batch.filename])} />
       <p role="status" className="mt-2 break-words text-xs text-muted-foreground">{feedback.compactDetail}</p>
-      {(batch.status === 'failed' || batch.status === 'cancelled') && feedback.detail && <p className={`mt-1 break-words text-xs ${batch.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}>{feedback.detail}</p>}
-      {feedback.failed > 0 && <p className={`task-row-detail text-xs ${batch.status === 'failed' ? 'text-destructive' : 'text-warning-foreground'}`} title={translateMessage(firstFailure)}>{issueSummary(firstFailure)}</p>}
+      {taskDetail && !failures.length && <p className="task-row-detail mt-1 break-words text-xs text-muted-foreground" title={taskDetail}>{taskDetail}</p>}
       {error && <p role="alert" className="break-words text-xs text-destructive">{translateMessage(error)}</p>}
     </TableCell>
     <TableCell role="cell" headers="tasks-result" className="task-result">
-      <p className="text-xs tabular-nums">{t('{0} 张成功，{1} 张失败', [feedback.complete, feedback.failed])}</p>
+      <p className="text-sm tabular-nums">{t('{0} 张成功，{1} 张失败', [feedback.complete, feedback.failed])}</p>
       <p className="mt-1 text-xs tabular-nums text-muted-foreground">{(batch.bytes / 1024 / 1024).toFixed(1)} MB</p>
-      {failures.length > 0 && <div role="region" aria-label={t('{0} 的失败图像', [batch.title || batch.filename])} tabIndex={0} className="task-failures mt-3 max-h-44 overflow-y-auto text-left text-xs">
-        <ul className="space-y-3">{failures.map(item => <li key={item.id}>
-          <p className="break-all">{item.filename}</p>
-          <p className="break-words text-muted-foreground">{translateMessage(item.error)}</p>
-          <p className="break-all text-muted-foreground">{item.url}</p>
-        </li>)}</ul>
-      </div>}
+      {failures.length > 0 && <Dialog>
+        <DialogTrigger asChild><Button variant="ghost" size="sm" className="task-failure-toggle">{t('失败详情（{0}）', [failures.length])}</Button></DialogTrigger>
+        <DialogContent className="task-failure-dialog">
+          <DialogHeader className="min-w-0 pe-6 text-left">
+            <DialogTitle className="leading-snug">{t('失败详情（{0}）', [failures.length])}</DialogTitle>
+            <DialogDescription className="break-all">{batch.title || batch.filename}</DialogDescription>
+          </DialogHeader>
+          <div role="region" aria-label={t('{0} 的失败图像', [batch.title || batch.filename])} tabIndex={0} className="task-failures">
+            {taskDetail && <p className="mb-4 break-words text-sm text-muted-foreground">{taskDetail}</p>}
+            <ul className="space-y-4">{failures.map(item => <li key={item.id}>
+              <p className="break-all text-sm font-medium">{item.filename}</p>
+              <p className="mt-1 break-words text-sm text-muted-foreground">{translateMessage(item.error)}</p>
+              <p className="mt-2 break-all text-xs text-muted-foreground">{item.url}</p>
+            </li>)}</ul>
+          </div>
+          <DialogFooter><DialogClose asChild><Button variant="outline">{t('关闭')}</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>}
     </TableCell>
     <TableCell role="cell" headers="tasks-actions" className="task-actions">
       <div className="flex flex-wrap items-center gap-2">
@@ -100,7 +113,7 @@ function TaskRow({ batch, owner }: { batch: ArchiveBatch; owner?: number }) {
         ? <Button variant="outline" size="sm" onClick={() => controller.current?.abort(new Error(t('你已取消下载。')))}><Square aria-hidden="true" />{t('取消下载')}</Button>
         : <Button variant="outline" size="sm" onClick={openOwner}><ExternalLink aria-hidden="true" />{t('打开正在下载的任务')}</Button>)}
       {resumable && <Button size="sm" disabled={busy} onClick={() => void retry(true)}><Play aria-hidden="true" />{t('继续未完成下载')}</Button>}
-      {canRetryArchive(batch) && <Button variant={resumable ? 'outline' : 'default'} size="sm" disabled={busy} onClick={() => void retry(false)}><RotateCw aria-hidden="true" />{t('仅重试失败图像')}</Button>}
+      {canRetryArchive(batch) && <Button variant="outline" size="sm" disabled={busy} onClick={() => void retry(false)}><RotateCw aria-hidden="true" />{t('仅重试失败图像')}</Button>}
       {!active && !resumable && !canRetryArchive(batch) && <span className="text-muted-foreground">—</span>}
       </div>
     </TableCell>
@@ -149,19 +162,31 @@ export default function DownloadTasks() {
   return <main className="tasks-shell">
     <header className="tasks-header"><Brand subtitle={t('所有网页的下载任务')} /></header>
     <div className="tasks-summary">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{t('下载任务')}</h1>
+      <div className="tasks-summary-heading">
+        <div>
+          <h1 className="text-xl font-semibold">{t('下载任务')}</h1>
+          <p className="tasks-description mt-2 text-xs text-muted-foreground">{t('所有网页的任务集中在此；下载期间请保持此页打开。')}</p>
+        </div>
         <Button variant="outline" size="sm" onClick={openFolder}><FolderOpen aria-hidden="true" />{t('打开下载文件夹')}</Button>
       </div>
-      <p className="text-sm text-muted-foreground">{t('{0} 个任务 · {1} 个进行中 · {2} 个已保存', [batches.length, active, saved])}</p>
-      <p className="text-xs text-muted-foreground">{t('所有网页的任务集中在此；下载期间请保持此页打开。')}</p>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">{t('下载策略')} · {translateMessage(DOWNLOAD_SPEEDS[speed].label)} · {translateMessage(DOWNLOAD_SPEEDS[speed].description)}</p>
+    </div>
+    <dl className="tasks-stats" aria-label={t('下载任务统计')}>
+      <div><dt>{t('全部任务')}</dt><dd>{batches.length}</dd></div>
+      <div><dt>{t('进行中')}</dt><dd data-active={active > 0}>{active}</dd></div>
+      <div><dt>{t('已保存')}</dt><dd>{saved}</dd></div>
+    </dl>
+    {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
+    {loading ? <Empty className="tasks-empty" role="status"><EmptyHeader>
+      <EmptyMedia variant="icon"><LoaderCircle aria-hidden="true" className="motion-safe:animate-spin" /></EmptyMedia>
+      <EmptyTitle>{t('读取下载任务…')}</EmptyTitle>
+    </EmptyHeader></Empty> : batches.length ? <section className="tasks-list" aria-label={t('所有网页的下载任务')}>
+      <div className="tasks-toolbar">
+        <div className="tasks-policy">
+          <p className="flex items-center gap-2 text-xs"><Gauge aria-hidden="true" className="size-3.5 text-muted-foreground" />{t('下载策略')}<Badge variant="secondary">{translateMessage(DOWNLOAD_SPEEDS[speed].label)}</Badge></p>
+          <p className="text-xs text-muted-foreground">{translateMessage(DOWNLOAD_SPEEDS[speed].description)}</p>
+        </div>
         <ArchiveProgressLegend />
       </div>
-    </div>
-    {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
-    {loading ? <p role="status">{t('读取下载任务…')}</p> : batches.length ? <section className="tasks-list" aria-label={t('所有网页的下载任务')}>
       <Table role="table" aria-label={t('所有网页的下载任务')} className="tasks-table">
         <TableHeader role="rowgroup"><TableRow role="row">
           <TableHead role="columnheader" scope="col" id="tasks-source">{t('任务与来源')}</TableHead>
@@ -171,9 +196,9 @@ export default function DownloadTasks() {
         </TableRow></TableHeader>
         <TableBody role="rowgroup">{batches.map(batch => <TaskRow key={batch.id} batch={batch} owner={owner} />)}</TableBody>
       </Table>
-    </section> : <Empty>
-      <EmptyMedia variant="icon"><ListTodo /></EmptyMedia><EmptyTitle>{t('还没有下载任务')}</EmptyTitle>
+    </section> : <Empty className="tasks-empty"><EmptyHeader>
+      <EmptyMedia variant="icon"><ListTodo aria-hidden="true" /></EmptyMedia><EmptyTitle>{t('还没有下载任务')}</EmptyTitle>
       <EmptyDescription>{t('在任意网页的插件弹窗中下载图像，任务会自动出现在这里。')}</EmptyDescription>
-    </Empty>}
+    </EmptyHeader></Empty>}
   </main>;
 }

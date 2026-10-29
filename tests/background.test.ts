@@ -4,7 +4,7 @@ import type { PopupViewState } from '../lib/popupViewState';
 
 let saved: { [key: `analysis:${number}`]: AnalysisState | undefined; [key: `popupView:${number}`]: PopupViewState | undefined; downloadBatch?: DownloadBatch };
 let handler: (message: Request, sender: { id: string }, response: (result: unknown) => void) => boolean;
-let updated: (id: number, change: { status: string }) => void;
+let updated: (id: number, change: { status?: string; url?: string }) => void;
 const capture = { url: 'https://example.org/', baseUrl: 'https://example.org/', title: 'Landscapes', total: 1, truncated: false, challenged: false, images: [{ source: '/landscape.jpg', alt: 'Landscape', width: 640, height: 400, declared: ['/full.jpg'], srcsets: [], link: '' }] };
 let execute: ReturnType<typeof vi.fn>;
 let permissionContains: ReturnType<typeof vi.fn>;
@@ -248,6 +248,58 @@ it('does not restore a queued popup view after its tab navigates', async () => {
   expect(saved['analysis:1']).toBeUndefined();
   expect(saved['popupView:1']).toBeUndefined();
 });
+it('preserves results and selection when lazy loading reports loading in the same document', async () => {
+  execute.mockResolvedValue([{ documentId: 'main-document', result: capture }]);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  const job = saved['analysis:1']!.job;
+  await send({ type: 'SELECT', job, selected: ['1'], mode: 'custom' });
+  const snapshot = structuredClone(saved['analysis:1']);
+  updated(1, { status: 'loading' });
+  updated(1, { status: 'complete' });
+  await send({ type: 'SELECT', job, selected: ['1'], mode: 'custom' });
+  expect(saved['analysis:1']).toEqual(snapshot);
+  expect(execute.mock.calls.at(-1)![0].target).toEqual({ tabId: 1, documentIds: ['main-document'] });
+});
+
+it('clears results when a same-URL reload replaces the extracted document', async () => {
+  execute.mockResolvedValue([{ documentId: 'old-document', result: capture }]);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  execute.mockRejectedValueOnce(new Error('No document with id old-document'));
+  updated(1, { status: 'loading' });
+  await vi.waitFor(() => expect(saved['analysis:1']).toBeUndefined());
+});
+
+it('checks the completed document if loading began before the old document was replaced', async () => {
+  execute.mockResolvedValue([{ documentId: 'old-document', result: capture }]);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  updated(1, { status: 'loading' });
+  await send({ type: 'SELECT', job: saved['analysis:1']!.job, selected: [], mode: 'custom' });
+  expect(saved['analysis:1']).toBeDefined();
+  execute.mockRejectedValueOnce(new Error('No document with id old-document'));
+  updated(1, { status: 'complete' });
+  await vi.waitFor(() => expect(saved['analysis:1']).toBeUndefined());
+});
+
+it('does not let lazy loading during scroll extraction invalidate its running job', async () => {
+  execute.mockImplementation(async ({ func }) => {
+    if (func.name === 'scrollPage') {
+      updated(1, { status: 'loading' });
+      updated(1, { status: 'complete' });
+    }
+    return [{ documentId: 'main-document', result: capture }];
+  });
+  expect(await send({ type: 'ANALYZE', tabId: 1, scroll: true })).toMatchObject({ ok: true, analysis: { status: 'done', documentId: 'main-document' } });
+  expect(saved['analysis:1']?.results.length).toBeGreaterThan(0);
+  expect(execute.mock.calls.filter(([options]) => options.func.name === 'scrollPage')[0]![0].target.documentIds).toEqual(['main-document']);
+});
+
+it('still clears results when navigation changes the URL', async () => {
+  execute.mockResolvedValue([{ documentId: 'main-document', result: capture }]);
+  await send({ type: 'ANALYZE', tabId: 1 });
+  updated(1, { url: 'https://elsewhere.test/' });
+  await vi.waitFor(() => expect(saved['analysis:1']).toBeUndefined());
+});
+
 it('invalidates previous results when the tab reloads', async () => {
   await send({ type: 'ANALYZE', tabId: 1 });
   updated(1, { status: 'loading' });

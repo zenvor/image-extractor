@@ -13,7 +13,7 @@ import { previewState } from './preview';
 import { loadPopupSnapshot, matchingAnalysis, preview, workspace, type PopupSnapshot } from './bootstrap';
 import { normalizeCollectOptions } from '../../lib/collectOptions';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowDownToLine, Check, CheckCheck, CircleAlert, CircleMinus, Globe2, Images, LoaderCircle, ScanSearch, X, Copy, FileText, ChevronsDown, Layers, ListTodo, Play, RotateCw, EllipsisVertical } from 'lucide-react';
+import { ArrowDownToLine, Check, CheckCheck, ChevronDown, CircleAlert, CircleMinus, Globe2, Images, LoaderCircle, ScanSearch, X, Copy, FileText, ChevronsDown, Layers, ListTodo, Play, RotateCw, LayoutGrid } from 'lucide-react';
 import { LanguageControl } from '../../components/LanguageControl';
 import { Checkbox } from '../../components/ui/checkbox';
 import { ExtractionOptions } from '../../components/ExtractionOptions';
@@ -59,6 +59,12 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
   const [query, setQuery] = useState(initial.view?.query || '');
   const popupView = useRef<PopupViewState | undefined>(initial.view);
   const [feedback, setFeedback] = useState(initial.feedback);
+  const [copiedAt, setCopiedAt] = useState(0);
+  useEffect(() => {
+    if (!copiedAt) return;
+    const timer = setTimeout(() => setCopiedAt(0), 2000);
+    return () => clearTimeout(timer);
+  }, [copiedAt]);
   const feedbackToastId = useId();
   const downloadToastId = useId();
   const downloadsInitialized = useRef(false);
@@ -247,7 +253,7 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
       const wasActive = status !== undefined && archiveActive({ ...batch, status });
       if (archiveActive(batch)) {
         if (!wasActive) {
-          toast.info(t("下载任务已开始"), { id: downloadToastId, description: t("可在“更多 → 下载任务”中查看进度。") });
+          toast.info(t("下载任务已开始"), { id: downloadToastId, description: t("可在左侧“下载任务”中查看进度。") });
         }
         continue;
       }
@@ -384,8 +390,14 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
   }
   async function copy(item?: ImageResult) {
     const items = item ? [item] : chosen;
-    try { await navigator.clipboard.writeText(items.map(item => item.url).join('\n')); setFeedback(t('已复制 {0} 个图像链接', [items.length])); }
-    catch { setFeedback(t("无法使用剪贴板，请导出 TXT 链接。")); }
+    try {
+      await navigator.clipboard.writeText(items.map(item => item.url).join('\n'));
+      if (item) setFeedback(t('已复制 {0} 个图像链接', [items.length]));
+      else setCopiedAt(Date.now());
+    } catch {
+      if (!item) setCopiedAt(0);
+      setFeedback(t("无法使用剪贴板，请导出 TXT 链接。"));
+    }
   }
   function exportLinks() {
     if (preview) { setFeedback(t("已导出 TXT 链接文件")); return; }
@@ -409,15 +421,24 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
       <section className="page-context">
       <div className="page-identity"><h2 title={title}>{title || t("采集当前页图像")}</h2><p><Globe2 aria-hidden="true" /><span title={page.url}>{host}</span><span className="context-divider" /><span role="status" className={state?.status === 'error' ? 'error' : ''}>{running ? <LoaderCircle className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : state?.status === 'done' ? <Check aria-hidden="true" /> : null}{status}</span></p></div>
       </section>
-      <LanguageControl compact />
-      <Button size="sm" className="refresh-button" onClick={() => analyze()} disabled={workspace || unavailable || running} aria-label={t("重新提取当前页图像")} aria-busy={running}>{running ? t("提取中…") : extracted ? t("提取完成") : t("提取图像")}</Button>
+      <div className="flex shrink-0 items-center" role="group" aria-label={t("提取图像")}>
+        <Button size="sm" className="refresh-button rounded-r-none" onClick={() => analyze()} disabled={workspace || unavailable || running} aria-label={t("重新提取当前页图像")} aria-busy={running}>{running ? t("提取中…") : extracted ? t("提取完成") : t("提取图像")}</Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon-sm" className="extraction-method-trigger rounded-l-none border-l border-primary-foreground/20" disabled={workspace || unavailable || running} aria-label={t("选择提取方式")}><ChevronDown aria-hidden="true" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="scroll-extract-item" onSelect={() => void analyze(true)} disabled={workspace || unavailable || running}><ChevronsDown aria-hidden="true" />{t("滚动加载后提取")}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       </nav>
     </header>
     <div className="popup-workspace">
       <aside className="workspace-sidebar" aria-label={t("图像操作")}>
         <div className="sidebar-controls">
           <section className="sidebar-group original-mode-control">
-            <Label htmlFor="original-mode">{t("匹配原图模式")}</Label>
+            <Label htmlFor="original-mode" className="font-normal">{t("匹配原图模式")}</Label>
             <Switch id="original-mode" className="original-mode-switch" checked={filter === 'large'} onCheckedChange={chooseOriginalMode} disabled={running} />
           </section>
           <section className="sidebar-group sidebar-format-group" aria-labelledby="image-format-heading">
@@ -443,14 +464,14 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
           </div>
           <Button size="lg" className="zip-button" onClick={() => download()} disabled={starting || running || activeArchive || !chosen.length} aria-label={activeArchive ? t("下载任务进行中") : starting ? t("准备下载") : t('下载所选内容（{0}）', [chosen.length])}>{starting || activeArchive ? <LoaderCircle className="animate-spin" /> : <ArrowDownToLine />}{activeArchive ? downloadFeedback?.title : starting ? t("准备下载…") : t('下载所选内容（{0}）', [chosen.length])}</Button>
           <div className="sidebar-utility-actions">
-            <Button size="sm" variant="outline" className="copy-links-button" onClick={() => copy()} disabled={running || !chosen.length} aria-label={t("复制选定的网址")} title={t("复制选定的网址")}><Copy aria-hidden="true" />{t("复制网址")}</Button>
-            <Button size="sm" variant="outline" className="export-links-button" onClick={exportLinks} disabled={running || !chosen.length} aria-label={t("导出选定链接为 TXT")} title={t("导出选定链接为 TXT")}><FileText aria-hidden="true" />{t("导出 TXT")}</Button>
-            <Button size="sm" variant="outline" className="scroll-extract-button" onClick={() => analyze(true)} disabled={workspace || running || unavailable} aria-label={t("滚动加载后提取")} title={t("滚动加载后提取")}><ChevronsDown aria-hidden="true" />{t("滚动提取")}</Button>
+            <Button size="sm" variant="outline" className="copy-links-button col-span-2" onClick={() => copy()} disabled={running || !chosen.length} aria-label={copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")} title={t("复制选定的网址")} aria-live="polite">{copiedAt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")}</Button>
+            <Button size="sm" variant="outline" className="view-task-button" onClick={viewTask}><ListTodo aria-hidden="true" />{t("下载任务")}</Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="more-actions-button" aria-label={t("更多操作")}><EllipsisVertical aria-hidden="true" />{t("更多")}</Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="more-actions-button" aria-label={t("更多操作")}><LayoutGrid aria-hidden="true" />{t("更多")}</Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" side="top">
+                <DropdownMenuItem className="export-links-button" onSelect={exportLinks} disabled={running || !chosen.length} aria-label={t("导出选定链接为 TXT")}><FileText aria-hidden="true" />{t("导出 TXT")}</DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="batch-tools-button" onSelect={openTools}><Layers aria-hidden="true" />{t("批量网址 / 导入 HTML")}</DropdownMenuItem>
-                <DropdownMenuItem className="view-task-button" onSelect={viewTask}><ListTodo aria-hidden="true" />{t("下载任务")}</DropdownMenuItem>
                 {(canResumeArchive(archive) || canRetryArchive(archive)) && <DropdownMenuSeparator />}
                 {canResumeArchive(archive) && <DropdownMenuItem disabled={starting} onSelect={resumeIncomplete} aria-label={t("继续未完成下载")}><Play aria-hidden="true" />{t("继续下载")}</DropdownMenuItem>}
                 {canRetryArchive(archive) && <DropdownMenuItem className="retry-failed-button" disabled={starting || activeArchive} onSelect={retryFailed} aria-label={t("仅重试失败图像")} title={t("只下载失败图像，保留原文件名，另存为补充 ZIP")}><RotateCw aria-hidden="true" />{t("重试失败项")}</DropdownMenuItem>}
@@ -458,12 +479,13 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
             </DropdownMenu>
           </div>
         </footer>
+        <LanguageControl compact />
       </aside>
       <div className="image-workspace">
         <section className="gallery" aria-busy={running}>
           {!!state?.unresolvedCount && <p role="status" className="mx-3 mt-2 text-xs text-destructive">{translateMessage(state.message)}</p>}
           <ImageList showKind={false} header={pagination => <div className="workspace-controls">
-          <div className="results-toolbar"><div className="results-count-group"><span className="visible-count">{t(filter === 'large' ? '{0} 张原图' : '{0} 张图像', [visible.length === scopeTotal ? visible.length : visible.length + ' / ' + scopeTotal])}</span>{pagination}</div><Label className="preview-background-control"><Checkbox checked={darkPreview} onCheckedChange={value => setDarkPreview(value === true)} />{t("深色图像背景")}</Label><div className="view-options" role="group" aria-label={t("图像显示方式")}><Button size="sm" variant={view === 'grid' ? 'secondary' : 'ghost'} aria-label={t("网格视图")} aria-pressed={view === 'grid'} onClick={() => changeView('grid')}>{t("网格")}</Button><Button size="sm" variant={view === 'list' ? 'secondary' : 'ghost'} aria-label={t("列表视图")} aria-pressed={view === 'list'} onClick={() => changeView('list')}>{t("列表")}</Button></div></div>
+          <div className="results-toolbar"><div className="results-count-group"><span className="visible-count">{t(filter === 'large' ? '{0} 张原图' : '{0} 张图像', [visible.length === scopeTotal ? visible.length : visible.length + ' / ' + scopeTotal])}</span>{pagination}</div><Label className="preview-background-control"><Checkbox checked={darkPreview} onCheckedChange={value => setDarkPreview(value === true)} />{t("反转背景")}</Label><div className="view-options" role="group" aria-label={t("图像显示方式")}><Button size="sm" variant="ghost" className="text-gray-400" aria-label={t("网格视图")} aria-pressed={view === 'grid'} onClick={() => changeView('grid')}>{t("网格")}</Button><Button size="sm" variant="ghost" className="text-gray-400" aria-label={t("列表视图")} aria-pressed={view === 'list'} onClick={() => changeView('list')}>{t("列表")}</Button></div></div>
         </div>} key={(state?.job || '') + filter + query} initialPosition={popupView.current?.job === state?.job ? popupView.current?.gallery : undefined} onPositionChange={(position: GalleryPosition) => savePopupView(position)} items={visible} selected={selectedSet} onToggle={toggle} onCopy={item => copy(item)} onDownload={item => download([item])} downloadDisabled={starting || running || activeArchive} view={view} empty={<Empty className="empty">
             <EmptyHeader><EmptyMedia variant="icon">{running ? <LoaderCircle className="animate-spin" /> : state?.status === 'error' || unavailable ? <CircleAlert /> : <Images />}</EmptyMedia>
             <EmptyTitle>{running ? t("正在寻找页面中的图像") : unavailable ? t("换一个网页试试") : state?.status === 'error' ? t("暂时无法读取图像") : noMatches ? t("没有符合条件的图像") : filter === 'large' ? t("未匹配到原图") : t("这页还没有可读取的图像")}</EmptyTitle>

@@ -41,10 +41,18 @@ async function analyze(tabId: number, preferredMode?: SelectionMode, scroll = fa
     return state;
   });
   try {
-    if (scroll) await chrome.scripting.executeScript({ target: { tabId }, func: scrollPage });
+    if (scroll) {
+      const [document] = await chrome.scripting.executeScript({ target: { tabId }, func: () => {}, injectImmediately: true });
+      await orderedAnalysis(tabId, async () => {
+        if ((await readAnalysis(tabId))?.job !== state.job) throw new Error('页面或分析任务已变化，请重新提取图像。');
+        state.documentId = document?.documentId;
+        await saveAnalysis(state);
+      });
+      await chrome.scripting.executeScript({ target: { tabId, ...(state.documentId ? { documentIds: [state.documentId] } : {}) }, func: scrollPage });
+    }
     const options = normalizeCollectOptions((await chrome.storage.local.get('collectOptions')).collectOptions);
     const captures = await withTimeout(
-      chrome.scripting.executeScript({ target: { tabId }, func: collectPage, args: [options], injectImmediately: true }),
+      chrome.scripting.executeScript({ target: { tabId, ...(state.documentId ? { documentIds: [state.documentId] } : {}) }, func: collectPage, args: [options], injectImmediately: true }),
       5000, '页面读取超时，请重新点击工具栏图标后重试。',
     );
     const page = captures[0]?.result;
@@ -55,6 +63,7 @@ async function analyze(tabId: number, preferredMode?: SelectionMode, scroll = fa
         throw new Error('页面已变化，请重新分析。');
       }
       if (page.challenged) throw new Error('页面仍在验证中，请在网页完成验证后重新分析。');
+      state.documentId = captures[0]?.documentId;
       state.results = resolveImages(page);
       state.hostedPages = hostedImagePages(page);
       state.title = page.title;
@@ -237,10 +246,18 @@ export default defineBackground(() => {
     orderedAnalysis(tabId, () => clearAnalysis(tabId)).catch(console.error);
   });
   chrome.tabs.onUpdated.addListener((tabId, change) => {
-    if (change.status !== 'loading' && !change.url) return;
+    if (change.status !== 'loading' && change.status !== 'complete' && !change.url) return;
     orderedAnalysis(tabId, async () => {
       const url = change.url || (await chrome.tabs.get(tabId)).url || '';
       if (url === chrome.runtime.getURL('/popup.html?workspace=1')) return;
+      const state = await readAnalysis(tabId);
+      if (state?.documentId && url === state.url) {
+        try {
+          // Lazy frames can restart tab loading without replacing the extracted document.
+          const documents = await chrome.scripting.executeScript({ target: { tabId, documentIds: [state.documentId] }, func: () => {}, injectImmediately: true });
+          if (documents.some(document => document.documentId === state.documentId)) return;
+        } catch { /* A replaced document is no longer an injection target. */ }
+      } else if (change.status === 'complete' && !change.url) return;
       await clearAnalysis(tabId);
     }).catch(console.error);
   });

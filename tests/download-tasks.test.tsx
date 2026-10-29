@@ -55,7 +55,8 @@ it('shows five pages together and updates one progress without restarting any tr
   for (let id = 1; id <= 5; id++) records[archiveKey(String(id))] = batch(String(id), id <= 3 ? 'fetching' : 'complete');
   await mount();
   expect(container.querySelectorAll('[data-task-id]')).toHaveLength(5);
-  expect(container.textContent).toContain('5 个任务 · 3 个进行中 · 2 个已保存');
+  expect([...container.querySelectorAll('.tasks-stats dt')].map(node => node.textContent)).toEqual(['全部任务', '进行中', '已保存']);
+  expect([...container.querySelectorAll('.tasks-stats dd')].map(node => node.textContent)).toEqual(['5', '3', '2']);
   expect(vi.mocked(runArchive).mock.calls.map(([id]) => id).sort()).toEqual(['1', '2', '3']);
   const changed = structuredClone(records[archiveKey('1')]) as ArchiveBatch;
   changed.items[1]!.status = 'complete';
@@ -65,7 +66,8 @@ it('shows five pages together and updates one progress without restarting any tr
   expect(card('1').querySelector('[role=progressbar]')?.getAttribute('aria-valuenow')).toBe('100');
   expect(runArchive).toHaveBeenCalledTimes(3);
   await act(async () => { await setLanguagePreference('en'); });
-  expect(container.textContent).toContain('5 tasks · 3 active · 2 saved');
+  expect([...container.querySelectorAll('.tasks-stats dt')].map(node => node.textContent)).toEqual(['All tasks', 'Active', 'Saved']);
+  expect([...container.querySelectorAll('.tasks-stats dd')].map(node => node.textContent)).toEqual(['5', '3', '2']);
   expect(runArchive).toHaveBeenCalledTimes(3);
   expect(vi.mocked(runArchive).mock.calls.every(([, signal]) => !signal.aborted)).toBe(true);
 });
@@ -98,12 +100,18 @@ it('requests permissions for failed images only and preserves failure details', 
   expect(card('1').querySelector<HTMLElement>('[data-outcome=complete]')?.style.width).toBe('50%');
   expect(card('1').querySelector<HTMLElement>('[data-outcome=failed]')?.style.width).toBe('50%');
   expect(card('1').querySelector('[role=progressbar]')?.getAttribute('aria-valuetext')).toContain('1 张成功，1 张失败');
-  expect(button('1', '仅重试失败图像').dataset.variant).toBe('default');
-  expect(card('1').querySelectorAll('button')).toHaveLength(1);
-  expect(card('1').textContent).toContain('网站繁忙或请求受限');
-  expect(card('1').textContent).toContain('HTTP 503');
-  expect(card('1').querySelector('[role=region]')?.textContent).toContain('https://failed.test/b.svg');
-  expect(card('1').querySelector('[role=region]')?.getAttribute('tabindex')).toBe('0');
+  const row = card('1');
+  expect(button('1', '仅重试失败图像').dataset.variant).toBe('outline');
+  expect(row.querySelector('[role=region]')).toBeNull();
+  await act(async () => button('1', '失败详情（1）').click());
+  const dialog = document.querySelector<HTMLElement>('[role=dialog]')!;
+  expect(dialog.textContent).toContain('002.svg');
+  expect(dialog.textContent).toContain('HTTP 503');
+  expect(dialog.querySelector('[role=region]')?.textContent).toContain('https://failed.test/b.svg');
+  expect(dialog.querySelector('[role=region]')?.getAttribute('tabindex')).toBe('0');
+  expect(card('1')).toBe(row);
+  await act(async () => [...dialog.querySelectorAll('button')].find(node => node.textContent === '关闭')!.click());
+  expect(document.querySelector('[role=dialog]')).toBeNull();
   await act(async () => button('1', '仅重试失败图像').click());
   expect(chrome.permissions.request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://failed.test/*'] });
   expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'RETRY_ARCHIVE', batchId: '1' });
@@ -157,7 +165,8 @@ it('distinguishes saved partial results, unsaved failures and user cancellation 
   expect(card('3').querySelector('[data-slot=badge]')?.getAttribute('data-variant')).toBe('outline');
   expect(card('2').textContent).toContain('Archive disk failure');
   expect(card('3').textContent).toContain('下载已取消');
-  expect(container.querySelector('[data-slot=dialog-trigger]')).toBeNull();
+  expect(button('1', '失败详情（1）')).toBeTruthy();
+  expect(document.querySelector('[role=dialog]')).toBeNull();
   expect(runArchive).not.toHaveBeenCalled();
 });
 
@@ -176,7 +185,7 @@ it('keeps task rows and active controllers mounted through resizing and status s
   await act(async () => { await setLanguagePreference('en'); });
   expect([...container.querySelectorAll('thead th')].map(el => el.textContent)).toEqual(['Task / source', 'Status / progress', 'Download results', 'Actions']);
   expect(card('1')).toBe(firstRow); expect(card('2')).toBe(secondRow);
-  expect(container.querySelectorAll('[aria-label="Interface language"]')).toHaveLength(1);
+  expect(container.querySelectorAll('[aria-label="Interface language: English"]')).toHaveLength(1);
 });
 
 it('shows full filenames and source URLs directly in each task row', async () => {

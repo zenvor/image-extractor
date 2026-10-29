@@ -431,7 +431,8 @@ it('cancel all clears hidden choices while preserving displayed images, search a
     expect(container.querySelector<HTMLButtonElement>(selector)?.disabled, selector).toBe(true);
   }
   expect(container.querySelector<HTMLButtonElement>('.copy-links-button')?.disabled).toBe(true);
-  for (const selector of ['.export-links-button']) expect(document.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
+  await openMore();
+  expect(document.querySelector('.export-links-button')?.getAttribute('aria-disabled')).toBe('true');
   await act(async () => root!.unmount()); root = undefined;
   await mount();
   expectDownloadCount(0);
@@ -565,12 +566,12 @@ it('leaves no live storage listener after the popup closes', async () => {
   await act(async () => root!.unmount()); root = undefined;
   expect(listeners.size).toBe(0);
 });
-it('paginates a thousand images in complete 20-card pages and keeps keyboard navigation', async () => {
+it('paginates a thousand images in complete 21-card pages and keeps keyboard navigation', async () => {
   analysis = { ...fixture(), results: Array.from({ length: 1000 }, (_, index) => ({ ...results[0]!, id: String(index), label: '图像 ' + index })), selected: ['0'], total: 1000 };
   await mount();
   const activeCards = () => container.querySelectorAll('.image-cards[data-visible=true] .image-item');
-  expect(activeCards()).toHaveLength(20);
-  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 50');
+  expect(activeCards()).toHaveLength(21);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 48');
   expect(container.querySelector('.results-count-group .image-pagination')).not.toBeNull();
   expect(container.querySelectorAll('.image-pagination button')).toHaveLength(2);
   expect(container.querySelector('.image-gallery > .image-pagination')).toBeNull();
@@ -579,8 +580,8 @@ it('paginates a thousand images in complete 20-card pages and keeps keyboard nav
   await act(async () => { container.querySelector('#image-0')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })); });
   await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
   expect(document.activeElement?.id).toBe('image-999');
-  expect(activeCards()).toHaveLength(20);
-  expect(container.querySelector('.image-page-summary')?.textContent).toBe('50 / 50');
+  expect(activeCards()).toHaveLength(13);
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('48 / 48');
   expect(container.querySelector<HTMLButtonElement>('[aria-label="下一页"]')?.disabled).toBe(true);
   await click('#image-999');
   expect(analysis!.selected).toEqual(['0', '999']);
@@ -593,13 +594,13 @@ it.each(['grid', 'list'])('keeps all current-page cards mounted while scrolling 
   const firstCard = container.querySelector<HTMLElement>('.image-item')!;
   const image = firstCard.querySelector<HTMLImageElement>('img')!;
   const initialCards = [...container.querySelectorAll('.image-item')];
-  expect(initialCards).toHaveLength(20);
+  expect(initialCards).toHaveLength(21);
   expect([...container.querySelectorAll('.image-item img')].every(img => img.getAttribute('loading') === 'lazy')).toBe(true);
   await act(async () => { image.dispatchEvent(new Event('load')); });
   const scroller = container.querySelector<HTMLDivElement>('.image-list')!;
   await act(async () => { scroller.scrollTop = 3000; scroller.dispatchEvent(new Event('scroll')); });
   expect([...container.querySelectorAll('.image-item')]).toEqual(initialCards);
-  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 50');
+  expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 48');
   await click('[aria-label="下一页"]');
   expect(scroller.scrollTop).toBe(0);
   expect(container.querySelector('.image-cards[data-page="1"]')?.getAttribute('style')).toContain('display: none');
@@ -608,8 +609,25 @@ it.each(['grid', 'list'])('keeps all current-page cards mounted while scrolling 
   expect(firstCard.querySelector('.thumbnail-loading')).toBeNull();
   for (let page = 0; page < 3; page++) await click('[aria-label="下一页"]');
   expect(container.querySelectorAll('.image-cards')).toHaveLength(3);
-  expect(container.querySelectorAll('.image-item')).toHaveLength(60);
+  expect(container.querySelectorAll('.image-item')).toHaveLength(63);
   expect(container.contains(image)).toBe(false);
+});
+
+it('keeps the checkmark mounted while selection changes and recent pages are restored', async () => {
+  analysis = { ...fixture(), results: Array.from({ length: 43 }, (_, index) => ({ ...results[0]!, id: String(index) })), selected: [], total: 43 };
+  await mount();
+  const indicator = container.querySelector('#image-0 [data-slot=checkbox-indicator]')!;
+  expect(indicator.getAttribute('data-state')).toBe('unchecked');
+  await click('.select-all-button');
+  expect(container.querySelector('#image-0 [data-slot=checkbox-indicator]')).toBe(indicator);
+  expect(indicator.getAttribute('data-state')).toBe('checked');
+  await click('[aria-label="下一页"]');
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .item-checkbox[data-state=checked]')).toHaveLength(21);
+  await click('[aria-label="上一页"]');
+  expect(container.querySelector('#image-0 [data-slot=checkbox-indicator]')).toBe(indicator);
+  await click('#image-0');
+  expect(container.querySelector('#image-0 [data-slot=checkbox-indicator]')).toBe(indicator);
+  expect(indicator.getAttribute('data-state')).toBe('unchecked');
 });
 
 it('preserves cross-page selections and applies select-all to all filtered images', async () => {
@@ -617,11 +635,11 @@ it('preserves cross-page selections and applies select-all to all filtered image
   await mount();
   await click('#image-0');
   await click('[aria-label="下一页"]');
-  await click('#image-20');
+  await click('#image-21');
   await click('[aria-label="下一页"]');
-  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(13);
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(11);
   await click('#image-52');
-  expect(analysis!.selected).toEqual(['0', '20', '52']);
+  expect(analysis!.selected).toEqual(['0', '21', '52']);
   expectDownloadCount(3);
   await click('[aria-label="列表视图"]');
   expect(container.querySelector('.image-page-summary')?.textContent).toBe('3 / 3');
@@ -644,14 +662,14 @@ it('returns to the first page when a type filter changes the displayed results',
   await click('.format-filter[data-format=JPG]');
   expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 2');
   expect(container.querySelector('.image-page-summary')?.getAttribute('aria-label')).toBe('第 1 页，共 2 页');
-  expect(container.querySelectorAll('.image-item')).toHaveLength(20);
+  expect(container.querySelectorAll('.image-item')).toHaveLength(21);
   expect([...container.querySelectorAll('.format-badge')].every(badge => badge.textContent === 'PNG')).toBe(true);
   expect(container.querySelector<HTMLButtonElement>('[aria-label="上一页"]')?.disabled).toBe(true);
 });
 
 it('localizes pagination controls and the page count in English', async () => {
   await setLanguagePreference('en');
-  analysis = { ...fixture(), results: Array.from({ length: 21 }, (_, index) => ({ ...results[0]!, id: String(index) })), selected: [], total: 21 };
+  analysis = { ...fixture(), results: Array.from({ length: 22 }, (_, index) => ({ ...results[0]!, id: String(index) })), selected: [], total: 22 };
   await mount();
   expect(container.querySelector('[aria-label="Image pagination"]')).not.toBeNull();
   expect(container.querySelector('.image-page-summary')?.textContent).toBe('1 / 2');
@@ -670,38 +688,40 @@ it('copies the full selection from the sidebar, including search-hidden images',
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
   expect(document.querySelector('[role=menu]')).toBeNull();
 });
-it('exports selected URLs using the page title from the visible sidebar button', async () => {
+it('exports selected URLs using the page title from More', async () => {
   const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
   let filename = '';
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function(this: HTMLAnchorElement) { filename = this.download; });
   await mount();
-  await chooseAction('.export-links-button');
+  await chooseMoreAction('.export-links-button');
   expect(filename).toBe('测试图集.txt');
   const blob = create.mock.calls[0]![0] as Blob;
   expect(await blob.text()).toBe(results.filter(item => item.candidate).map(item => item.url).join('\n') + '\n');
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
 });
-it.each(['complete', 'fetching'] as const)('keeps the task accessible in More when the archive is %s', async status => {
+it.each(['complete', 'fetching'] as const)('keeps the task accessible in the sidebar when the archive is %s', async status => {
   const batch: ArchiveBatch = { id: 'zip', title: '测试图集', filename: '测试图集.zip', pageUrl: 'https://example.org/gallery', items: [], status, started: Date.now(), updated: Date.now(), bytes: 0, message: '正在下载图像', sourceTabId: 7, tabId: 99 };
   local.archiveBatch = batch;
   await mount();
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(status === 'fetching');
-  await openMore();
-  expect(document.querySelector('.view-task-button')?.hasAttribute('data-disabled')).toBe(false);
+  expect(container.querySelector<HTMLButtonElement>('.view-task-button')?.disabled).toBe(false);
   await chooseAction('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
 });
 
 it('opens the shared task overview even when the current webpage has no task', async () => {
   await mount();
-  expect(container.querySelector('.view-task-button')).toBeNull();
-  await chooseMoreAction('.view-task-button');
+  expect(container.querySelector('.workspace-sidebar .view-task-button')).not.toBeNull();
+  await click('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
 });
 
-it('keeps scroll extraction visible and opens batch tools from More', async () => {
+it('opens scroll extraction from the header and batch tools from More', async () => {
   await mount();
-  await click('.scroll-extract-button');
+  const trigger = container.querySelector<HTMLElement>('.app-header .extraction-method-trigger')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await flushToasts();
+  await chooseAction('.scroll-extract-item');
   expect(send).toHaveBeenCalledWith({ type: 'ANALYZE', tabId: 7, mode: 'large', scroll: true });
   expect(container.querySelector('.batch-tools-button')).toBeNull();
   await chooseMoreAction('.batch-tools-button');
@@ -770,12 +790,12 @@ it.each([
   };
   await move(0, 'ArrowDown');
   expect(document.activeElement?.id).toBe('image-' + columns);
-  await move(19, 'ArrowRight');
-  expect(document.activeElement?.id).toBe('image-20');
+  await move(20, 'ArrowRight');
+  expect(document.activeElement?.id).toBe('image-21');
   expect(container.querySelector('.image-page-summary')?.textContent).toBe('2 / 3');
-  await move(20, 'End');
+  await move(21, 'End');
   expect(document.activeElement?.id).toBe('image-52');
-  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(13);
+  expect(container.querySelectorAll('.image-cards[data-visible=true] .image-item')).toHaveLength(11);
   await move(52, 'Home');
   expect(document.activeElement?.id).toBe('image-0');
 });
@@ -799,8 +819,7 @@ it.each([
   expect(container.querySelector('[data-sonner-toast]')).toBeNull();
   await click('.zip-button');
   expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD_ZIP', job: 'test', selected: ['L0', 'L1', 'L2'] });
-  await openMore();
-  expect(document.querySelector('.view-task-button')?.hasAttribute('data-disabled')).toBe(false);
+  expect(container.querySelector<HTMLButtonElement>('.view-task-button')?.disabled).toBe(false);
 });
 it('retains the current page progress and task link while another page updates or completes', async () => {
   const own: ArchiveBatch = { id: 'own', sourceTabId: 7, pageUrl: 'https://example.org/gallery', title: '当前页', filename: 'own.zip', items: [], status: 'fetching', started: Date.now(), updated: Date.now(), bytes: 0, message: '当前页下载中', tabId: 98 };
@@ -816,7 +835,7 @@ it('retains the current page progress and task link while another page updates o
   expect(container.querySelector('.download-selection')?.textContent).not.toContain('正在获取图像');
   expect(container.querySelector('[data-sonner-toast]')).toBeNull();
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
-  await chooseMoreAction('.view-task-button');
+  await click('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
   await act(async () => {
     for (const listener of listeners) listener({ 'archiveBatch:own': { newValue: { ...own, status: 'complete' } } }, 'local');
@@ -857,7 +876,7 @@ it.each(['packing', 'saving', 'partial', 'failed', 'cancelled'] as const)('does 
   expect(container.querySelector('.archive-progress')).toBeNull();
   expect(container.querySelector('[aria-label="查看下载详情"]')).toBeNull();
   expect(container.querySelector('[data-sonner-toast]')).toBeNull();
-  await chooseMoreAction('.view-task-button');
+  await click('.view-task-button');
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
   expect(container.querySelector<HTMLButtonElement>('.zip-button')!.disabled).toBe(status === 'packing' || status === 'saving');
 });
@@ -992,19 +1011,20 @@ it('keeps page order and separates common sidebar actions from More', async () =
   analysis!.results = [...analysis!.results].reverse();
   await mount();
   expect([...container.querySelectorAll('.image-name')].map(node => node.textContent)).toEqual(['2','1','0']);
-  expect(container.querySelector('.app-header .language-control')).toBeTruthy();
+  expect(container.querySelector('.workspace-sidebar > .language-control')).toBeTruthy();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('全部启用');
   expect(document.querySelector('.collection-options')).toBeNull();
   await click('.preview-background-control [role=checkbox]');
   expect(container.querySelector('main')?.dataset.darkPreview).toBe('true');
   expect(container.querySelector('.more-actions-button')).not.toBeNull();
   expect(document.querySelector('[role=menu]')).toBeNull();
-  for (const selector of ['.copy-links-button', '.export-links-button', '.scroll-extract-button']) {
+  for (const selector of ['.copy-links-button', '.view-task-button', '.more-actions-button']) {
     expect(container.querySelector(selector)?.closest('.workspace-sidebar')).toBeTruthy();
   }
   await openMore();
+  expect(document.querySelector('[role=menu] .export-links-button')).not.toBeNull();
   expect(document.querySelector('[role=menu] .batch-tools-button')).not.toBeNull();
-  expect(document.querySelector('[role=menu] .view-task-button')).not.toBeNull();
+  expect(container.querySelector('.workspace-sidebar .view-task-button')).not.toBeNull();
   await act(async () => { document.querySelector('[role=menu]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(document.querySelector('[role=menu]')).toBeNull();
   expect(analysis!.selected).toEqual(['L0','L1','L2']);
@@ -1066,6 +1086,31 @@ it('supports keyboard selection and Escape in the standard extraction menu', asy
   expect(document.querySelector('.collection-options[data-state=open]')).toBeNull();
 });
 
+it('keeps extraction menu items stable while an option is being saved', async () => {
+  await mount();
+  await openExtractionOptions();
+  const menu = document.querySelector<HTMLElement>('.collection-options')!;
+  const items = [...menu.querySelectorAll<HTMLElement>('[role=menuitemcheckbox]')];
+  let finish!: () => void;
+  const pendingWrite = new Promise<void>(resolve => { finish = resolve; });
+  const set = vi.spyOn(chrome.storage.local, 'set').mockImplementationOnce(async values => {
+    await pendingWrite;
+    Object.assign(local, values);
+  });
+  items[0]!.focus();
+  await act(async () => { items[0]!.click(); });
+  expect(document.querySelector('.collection-options')).toBe(menu);
+  expect([...menu.querySelectorAll('[role=menuitemcheckbox]')]).toEqual(items);
+  expect(items.every(item => !item.hasAttribute('data-disabled'))).toBe(true);
+  expect(document.activeElement).toBe(items[0]);
+  expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('全部启用');
+  await act(async () => { items[1]!.click(); });
+  expect(set).toHaveBeenCalledTimes(1);
+  await act(async () => { finish(); });
+  expect(items.map(item => item.getAttribute('aria-checked'))).toEqual(['false', 'true', 'true']);
+  expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('已选 2 项');
+});
+
 it('does not show an unsaved extraction change as saved', async () => {
   await mount();
   vi.spyOn(chrome.storage.local, 'set').mockRejectedValueOnce(new Error('storage unavailable'));
@@ -1083,7 +1128,7 @@ it('switches the popup language while preserving search and selection', async ()
   try {
     await act(async () => { await setLanguagePreference('en'); });
     expect(container.querySelector('.zip-button')?.textContent).toBe('Download selected (3)');
-    expect(container.querySelector('.copy-links-button')?.textContent).toBe('Copy URLs');
+    expect(container.querySelector('.copy-links-button')?.textContent).toBe('Copy selected URLs');
     expect(container.querySelector('.copy-links-button')?.getAttribute('aria-label')).toBe('Copy selected URLs');
     expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('城市');
     expect(container.querySelector('.visible-count')?.textContent).toBe('Originals: 1 / 3');
@@ -1091,20 +1136,18 @@ it('switches the popup language while preserving search and selection', async ()
     expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
   } finally { await act(async () => { await setLanguagePreference('zh-CN'); }); }
 });
-it('changes language through the official Select menu without losing the current results', async () => {
+it('toggles between Chinese and English without losing the current results', async () => {
   vi.stubGlobal('chrome', { ...chrome, runtime: { ...chrome.runtime, id: 'test' } });
   await mount();
   const selected = [...analysis!.selected];
-  const trigger = container.querySelector<HTMLElement>('.language-control [data-slot=select-trigger]')!;
-  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
-  await flushToasts();
-  expect(document.querySelector('[data-slot=select-content][role=listbox]')).not.toBeNull();
-  const english = [...document.querySelectorAll<HTMLElement>('[data-slot=select-item]')].find(item => item.textContent === 'English')!;
-  await act(async () => { english.click(); });
-  await flushToasts();
+  expect(container.querySelector('.language-control button')?.textContent).toBe('中文');
+  await click('.language-control button');
   expect(local.interfaceLanguage).toBe('en');
-  expect(container.querySelector('.language-control [data-slot=select-value]')?.textContent).toBe('English');
+  expect(container.querySelector('.language-control button')?.textContent).toBe('English');
   expect(container.querySelector('.visible-count')?.textContent).toBe('Originals: 3');
+  await click('.language-control button');
+  expect(local.interfaceLanguage).toBe('zh-CN');
+  expect(container.querySelector('.language-control button')?.textContent).toBe('中文');
   expect(analysis!.selected).toEqual(selected);
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
 });
@@ -1215,7 +1258,10 @@ it('keeps zero-selection bulk actions disabled while single-image download remai
   analysis = { ...fixture(), selected: [] };
   await mount();
   expectDownloadCount(0);
-  for (const selector of ['.zip-button', '.copy-links-button', '.export-links-button']) expect(container.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
+  for (const selector of ['.zip-button', '.copy-links-button']) expect(container.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
+  await openMore();
+  expect(document.querySelector('.export-links-button')?.getAttribute('aria-disabled')).toBe('true');
+  await act(async () => { document.querySelector('[role=menu]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   await click('.image-item .item-download');
   expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD', job: 'test', selected: ['L0'] });
   expect(analysis!.selected).toEqual([]);

@@ -3,7 +3,7 @@ import { Badge } from './ui/badge';
 import { Pagination, PaginationContent, PaginationItem } from './ui/pagination';
 import { t, translateMessage } from '../lib/i18n';
 import { Activity, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Download, Link } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Download } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { FormatBadge } from './FormatBadge';
@@ -12,7 +12,7 @@ import { imageFormat } from '../lib/urlImageFormat';
 import type { ImageResult, ImageView } from '../lib/types';
 import type { GalleryPosition } from '../lib/popupViewState';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 21;
 const RETAINED_PAGES = 3;
 
 type ImageListProps = {
@@ -91,7 +91,7 @@ function PaginatedImageList({ items, selected, onToggle, onCopy, onDownload, dow
             const format = imageFormat(item.url);
             const stem = filename.replace(/\.[^.]+$/, '') || item.label;
             return <Card role="listitem" key={item.id} aria-posinset={pageIndex * PAGE_SIZE + offset + 1} aria-setsize={items.length} className="image-item" data-selected={selected.has(item.id)} onClick={event => { if (!(event.target as HTMLElement).closest('button,a,input')) onToggle(item.id); }}>
-              <div className="image-detail"><ImageThumbnail item={item}><Checkbox id={'image-' + item.id} className="item-checkbox" aria-label={showKind ? t('选择{0}（{1}）', [translateMessage(item.label), item.candidate ? t('原图') : t('缩略图')]) : t('选择{0}', [translateMessage(item.label)])} checked={selected.has(item.id)} onCheckedChange={() => onToggle(item.id)} /></ImageThumbnail><div className="image-caption"><span className="image-name" title={filename}>{stem}</span><div className="image-meta"><div className="image-tags"><FormatBadge format={format} />{showKind && <Badge variant="outline" className="kind-label">{item.candidate ? t("原图") : t("缩略图")}</Badge>}</div><div className="item-actions"><Button variant="ghost" size="icon-xs" className="item-copy text-muted-foreground" aria-label={t('复制 {0} 的链接', [translateMessage(item.label)])} title={t("复制图像链接")} onClick={() => onCopy(item)}><Link className="size-4" /></Button><Button variant="ghost" size="icon-xs" className="item-download text-muted-foreground" aria-label={showKind ? t('下载 {0}（{1}）', [translateMessage(item.label), item.candidate ? t('原图') : t('缩略图')]) : t('下载 {0}', [translateMessage(item.label)])} title={t("直接下载这张图像")} disabled={downloadDisabled} onClick={() => onDownload(item)}><Download className="size-4" /></Button></div></div></div></div>
+              <div className="image-detail"><ImageThumbnail item={item}><Checkbox id={'image-' + item.id} className="item-checkbox" aria-label={showKind ? t('选择{0}（{1}）', [translateMessage(item.label), item.candidate ? t('原图') : t('缩略图')]) : t('选择{0}', [translateMessage(item.label)])} checked={selected.has(item.id)} onCheckedChange={() => onToggle(item.id)} /></ImageThumbnail><div className="image-caption"><span className="image-name" title={filename}>{stem}</span><div className="image-meta"><div className="image-tags"><FormatBadge format={format} />{showKind && <Badge variant="outline" className="kind-label">{item.candidate ? t("原图") : t("缩略图")}</Badge>}</div><div className="item-actions"><Button variant="ghost" size="icon-xs" className="item-copy text-muted-foreground" aria-label={t('复制 {0} 的链接', [translateMessage(item.label)])} title={t("复制图像链接")} onClick={() => onCopy(item)}><Copy className="size-4" /></Button><Button variant="ghost" size="icon-xs" className="item-download text-muted-foreground" aria-label={showKind ? t('下载 {0}（{1}）', [translateMessage(item.label), item.candidate ? t('原图') : t('缩略图')]) : t('下载 {0}', [translateMessage(item.label)])} title={t("直接下载这张图像")} disabled={downloadDisabled} onClick={() => onDownload(item)}><Download className="size-4" /></Button></div></div></div></div>
             </Card>;
           })}
         </div>
