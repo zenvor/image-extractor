@@ -46,6 +46,17 @@ export async function saveArchive(batch: ArchiveBatch) {
   await chrome.storage.local.set({ [archiveKey(batch.id)]: { ...batch, updated: Date.now() } });
 }
 
+export async function removeArchiveRecords(ids: string[], completedOnly = false) {
+  const values = await chrome.storage.local.get(null);
+  const requested = new Set(ids);
+  const removable = new Set(archivesFromStorage(values)
+    .filter(batch => requested.has(batch.id) && !archiveActive(batch) && (!completedOnly || batch.status === 'complete'))
+    .map(batch => batch.id));
+  const keys = Object.entries(values).filter(([key, value]) => isArchiveKey(key) && removable.has((value as ArchiveBatch | undefined)?.id || '')).map(([key]) => key);
+  if (keys.length) await chrome.storage.local.remove(keys);
+  return removable.size;
+}
+
 let archivePageTabId: number | undefined;
 let openingArchivePage: Promise<chrome.tabs.Tab> | undefined;
 

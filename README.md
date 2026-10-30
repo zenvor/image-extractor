@@ -14,16 +14,36 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
 </p>
 
-![Image preview, filters and manual selection in Chrome](docs/store-assets/screenshot-en.jpg)
+![Image preview, filters and manual selection in Chrome](docs/screenshots/popup-en.jpg)
 
-Interface preview with NASA images. [Screenshot details](docs/screenshots/README.md).
+Current interface with a curated selection of images from the [WhatsApp homepage](https://www.whatsapp.com/). [Screenshot details](docs/screenshots/README.md).
+
+<details>
+<summary>Source webpage and download manager</summary>
+
+![WhatsApp homepage used for this demonstration](docs/screenshots/whatsapp-source.jpg)
+
+![Download manager with search, status filters and record cleanup](docs/screenshots/downloads-en.jpg)
+
+Download records are demonstration data. Removing a record keeps the downloaded files.
+
+</details>
+
+<details>
+<summary>Promotional artwork</summary>
+
+![Image Extractor promotional banner](docs/store-assets/promo-banner.png)
+
+View the [three promotional graphics](docs/store-assets/README.md#promotional-artwork), including browsing, download management and a wide brand banner.
+
+</details>
 
 ## Features
 
 - **Browse before downloading.** Preview page images in a grid or list, search and filter by format, then choose what to save.
 - **Find supported originals.** Resolve thumbnail addresses and image-host detail links, including images linked from ViperGirls posts and images on Duitang.
 - **Work across sources.** Extract from the current page, a batch of webpage URLs, or saved HTML files. Optional sources include CSS backgrounds, icons and embedded images.
-- **Keep downloads organized.** Save numbered images in ZIP archives and manage downloads from several pages together. Retry failed images or resume interrupted tasks when cached files are available.
+- **Keep downloads organized.** Save numbered images in ZIP archives and manage downloads from several pages together. Search tasks by title, filename or source URL, filter by status, and clear finished records without deleting downloaded files. Retry failed images or resume interrupted tasks when cached files are available.
 - **Use the links elsewhere.** Copy selected image URLs or export them as a TXT list.
 
 Free and open source. No account required. English and Simplified Chinese interfaces.
@@ -88,7 +108,7 @@ Issues and pull requests are welcome. For a bug report, include a public example
 ## Acknowledgements
 
 - [gallery-dl](https://github.com/mikf/gallery-dl) informed the image-host support through its public URL and page formats. See [reference and attribution details](docs/hosted-images.md#reference-and-attribution).
-- Preview imagery comes from NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). [Image credits and screenshot details](docs/store-assets/README.md).
+- Interface examples use imagery from the [WhatsApp homepage](https://www.whatsapp.com/). WhatsApp and its imagery belong to their respective owners; no affiliation or endorsement is implied. [Screenshot and promotional asset details](docs/store-assets/README.md).
 
 ## License
 

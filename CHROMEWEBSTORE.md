@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-29. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
+Last updated: 2026-10-30. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
 
 ## Store listing
 
@@ -100,8 +100,11 @@ Planned distribution: free, public. Confirm country/region settings in dashboard
 
 ## Version history
 
+Popup loading update (2026-10-30): show skeleton placeholders for the header, sidebar controls and image gallery while restoring the page and settings. Refresh localized popup screenshots before Store submission.
+
 | Version | Date | Changes | Status |
 | --- | --- | --- | --- |
+| 1.2.1 | 2026-10-30 | Stack Download task and More on separate full-width rows in the popup sidebar; show image-type filters in a scrollable popover without shifting sidebar controls; simplify extraction-scope guidance; display each download task's creation date and time; add task search, status filters, individual record deletion and completed-record cleanup while keeping downloaded files; show skeleton placeholders while loading the task overview | Prepared for GitHub release; refreshed bilingual popup and download screenshots; Store submission remains separate |
 | 1.2.0 | 2026-10-29 | Preserve extracted results during lazy loading and scroll extraction; show 21 images per page without replaying selection animations; constrain tall and failed previews; streamline extraction, clipboard, export and language controls; refine rounded surfaces, hover feedback and checkbox contrast; keep settings stable while saving; improve download summaries, progress and failure-detail dialogs | Prepared for GitHub release; no new permissions; refresh popup and download-page screenshots before Store submission |
 | 1.1.0 | 2026-10-26 | Eleven image-host provider families for forum original lookup; optional detail access, cancellation and shared budgets | GitHub 1.1.0; not submitted to Chrome Web Store |
 | 1.0.0 | 2026-10-25 | First stable release; free extraction, supported original matching and ZIP downloads | Pending review; auto-publish enabled |

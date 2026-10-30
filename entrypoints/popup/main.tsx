@@ -1,11 +1,14 @@
 import { initializeLocale } from '../../lib/i18n';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import { loadPopupSnapshot } from './bootstrap';
+import { loadPopupSnapshot, preview } from './bootstrap';
+import { PopupSkeleton } from './PopupSkeleton';
 import '../../assets/styles.css';
 
 async function start() {
+  const root = createRoot(document.getElementById('app')!);
+  root.render(<PopupSkeleton preview={preview} />);
   const [, snapshot] = await Promise.all([initializeLocale(), loadPopupSnapshot()]);
-  createRoot(document.getElementById('app')!).render(<App initialSnapshot={snapshot} />);
+  root.render(<App initialSnapshot={snapshot} />);
 }
 void start();

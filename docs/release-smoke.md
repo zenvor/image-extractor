@@ -69,3 +69,11 @@ Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitor
 - [Release workflow 40243025730](https://github.com/zenvor/image-extractor-extension/actions/runs/40243025730) completed successfully for tag `v1.1.0`, commit `f0a956499033076ca515e7c5bb3b764459a37c0d`.
 - Downloaded the public release ZIP and checked its checksum, all 35 ZIP entries, manifest version 1.1.0 and bundled license notices. Size: 337931 bytes; SHA-256: `d0d8b50e69e96a3b4060f91826ec72eb71c11b07e36c5c8a2f9133f7c51dc361`.
 - The existing installed extension was not reloaded. GitHub publication did not update the previously submitted Chrome Web Store package.
+
+
+## 1.2.1 candidate — 2026-10-30
+
+- Typecheck, all 481 tests across 22 files, production build and bundle checks passed.
+- Isolated Chromium loaded the candidate and analyzed the live WhatsApp homepage (83 addresses). Popup layout, language switching and the format popover were exercised during screenshot capture.
+- Bilingual popup, source webpage and task-manager screenshots refreshed; curated image results and seeded task records are documented in `screenshots/README.md`. Screenshots do not claim completed downloads.
+- Shipped permissions are unchanged. Temporary capture-only host grants were limited to the isolated copy. The installed extension was not reloaded.

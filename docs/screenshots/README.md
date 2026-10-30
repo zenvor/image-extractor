@@ -1,14 +1,16 @@
 # Interface screenshots
 
-Captured on 2026-10-26 in real Chrome from an isolated candidate build using the current SVG logo. Each JPEG is a native 4× render of the 800×600 popup surface, saved at **3200×2400**. The installed extension was not reloaded.
+Captured on 2026-10-30 from the 1.2.1 build in isolated Chromium. The installed extension was not reloaded. Popup screenshots are native 2× captures of the 800×600 surface (1600×1200); task screenshots are 2560×1600.
 
-| File | State |
+| File | Content |
 | --- | --- |
-| [popup-en.jpg](popup-en.jpg) | English interface; two images manually selected. |
-| [popup-zh-CN.jpg](popup-zh-CN.jpg) | Simplified Chinese interface; no images selected. |
+| [popup-en.jpg](popup-en.jpg) | English popup, two selected images. |
+| [popup-zh-CN.jpg](popup-zh-CN.jpg) | Chinese popup, two selected images. |
+| [format-filter-en.jpg](format-filter-en.jpg) | Open format-filter popover. |
+| [downloads-en.jpg](downloads-en.jpg) | English task search, filters and cleanup. |
+| [downloads-zh-CN.jpg](downloads-zh-CN.jpg) | Chinese task manager. |
+| [whatsapp-source.jpg](whatsapp-source.jpg) | The source homepage in the same isolated browser. |
 
-The isolated build's local preview fixture uses nine image URLs read from NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/), filtered to `art002e009`. The photos load from NASA's servers. The Preview badge remains visible; these are interface demonstrations, not evidence of live extraction, original-image matching, or completed downloads. The fixture exists only in the temporary screenshot build and does not change the extension's shipped preview samples.
+The extension analyzed the live [WhatsApp homepage](https://www.whatsapp.com/) and found 83 image addresses during capture. For a readable demonstration, the isolated session was reduced to eight representative results from that extraction, with two selected. The screenshots therefore show a curated interface demonstration, not the complete unfiltered result set. Images are loaded from their original sources. Task-manager records are seeded examples of completed, partially failed and cancelled tasks, not evidence of real downloads.
 
-Both screenshots were recaptured after the SVG update. No logo was pasted over an earlier screenshot. The JPEG format preserves the photographic content; converting these screenshots to SVG would only wrap a bitmap and would not improve clarity. The logo itself is displayed directly from SVG in the interface.
-
-Imagery credit: **NASA**. Image rights remain with their respective owners; the project's MIT license does not relicense third-party imagery. See NASA's [images and media guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/). These screenshots illustrate the extension and do not imply NASA affiliation or endorsement.
+The capture-only manifest granted access to www.whatsapp.com and scontent.whatsapp.net. Those temporary grants are not in the repository or release package; shipped permissions remain unchanged. No UI content was painted over. WhatsApp names and imagery belong to their respective owners and are not relicensed under MIT. These examples do not imply affiliation or endorsement.

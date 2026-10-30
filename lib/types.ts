@@ -84,6 +84,7 @@ export type Request =
   | { type: 'DOWNLOAD_ZIP'; job: string; selected: string[] }
   | { type: 'RESUME_ARCHIVE'; batchId: string }
   | { type: 'RETRY_ARCHIVE'; batchId: string }
+  | { type: 'REMOVE_ARCHIVE_RECORDS'; ids: string[]; completedOnly: boolean }
   | { type: 'OPEN_ARCHIVES' }
   | { type: 'RESUME_DOWNLOADS' };
 

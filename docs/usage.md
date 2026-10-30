@@ -22,6 +22,8 @@ All webpages share one task overview. Each task has its own selection snapshot, 
 - **Read the results in the row:** ZIP filename, source webpage URL (or the local HTML label when no original page URL was provided), successful/failed image counts, and file size appear together. Hover over truncated filenames and source URLs to read them in full. Choose **Failure details** to open a scrollable dialog containing failed filenames, causes and complete image URLs.
 - **Distinguish processing from saving:** Purple means successful images, amber means failed images, and gray means pending images. A fully processed bar can include failures. Packing and saving remain indeterminate until Chrome confirms the ZIP save.
 - **Recover only what is missing:** Retry failed images without fetching successful ones again, or resume an interrupted task from valid local cache. Each action affects only its own task.
+- **Find a task:** Search its title, filename or source URL and combine the search with a status filter. Filtering does not stop active transfers. Creation time appears in each row.
+- **Clean up records:** Delete a finished record or clear all completed records. Downloaded files are kept; active tasks cannot be deleted, and bulk cleanup keeps failed, partially failed and cancelled tasks.
 - **Open the downloads folder:** The single button above the table opens Chrome's default downloads folder. It applies to all tasks.
 
 Saved ZIPs with partial failures have a warning status; unsaved failures are red, and cancellation is neutral. Status labels and numeric counts accompany the colors. On narrow screens the same task rows wrap without restarting downloads.

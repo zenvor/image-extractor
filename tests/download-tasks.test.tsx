@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import DownloadTasks from '../entrypoints/download/DownloadTasks';
 import { runArchive } from '../lib/archive';
 import { setLanguagePreference } from '../lib/i18n';
-import { archiveKey } from '../lib/archiveState';
+import { ARCHIVE_KEY, archiveKey, removeArchiveRecords } from '../lib/archiveState';
 import type { ArchiveBatch } from '../lib/types';
 
 vi.mock('../lib/archive', () => ({ runArchive: vi.fn(async () => {}) }));
@@ -40,8 +40,14 @@ beforeEach(async () => {
     downloads: { showDefaultFolder: vi.fn(async () => {}) },
     tabs: { getCurrent: vi.fn(async () => ({ id: 77 })), update: vi.fn(async () => ({ id: 99 })) },
     permissions: { request: vi.fn(async () => allowDownloadAccess), onRemoved: { addListener: (fn: () => void) => revoked.add(fn), removeListener: (fn: () => void) => revoked.delete(fn) } },
-    runtime: { sendMessage: vi.fn(async () => ({ ok: true, batchId: 'retry', tabId: 77 })) },
-    storage: { local: { get: vi.fn(async () => structuredClone(records)), set: vi.fn(async () => {}) },
+    runtime: { sendMessage: vi.fn(async message => message.type === 'REMOVE_ARCHIVE_RECORDS'
+      ? { ok: true, count: await removeArchiveRecords(message.ids, message.completedOnly) }
+      : { ok: true, batchId: 'retry', tabId: 77 }) },
+    storage: { local: { get: vi.fn(async () => structuredClone(records)), set: vi.fn(async () => {}), remove: vi.fn(async (keys: string[]) => {
+      const changes: Record<string, chrome.storage.StorageChange> = {};
+      for (const key of keys) { changes[key] = { oldValue: records[key] }; delete records[key]; }
+      for (const changed of listeners) changed(changes, 'local');
+    }) },
       onChanged: { addListener: (fn: Changed) => listeners.add(fn), removeListener: (fn: Changed) => listeners.delete(fn) } },
   });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
@@ -196,7 +202,7 @@ it('shows full filenames and source URLs directly in each task row', async () =>
   expect(card('1').querySelector('.task-identity')?.textContent).toContain('gallery.test');
   expect(card('1').textContent).toContain(complete.filename);
   expect(card('1').textContent).toContain(complete.pageUrl);
-  expect(card('1').querySelectorAll('button')).toHaveLength(0);
+  expect(button('1', '删除记录')).toBeTruthy();
   expect(document.querySelector('[role=dialog]')).toBeNull();
   expect(runArchive).not.toHaveBeenCalled();
 });
@@ -236,4 +242,58 @@ it('shows imported HTML source metadata without replacing the workspace identity
   expect(card('1').textContent).not.toContain('chrome-extension://');
   expect(card('2').textContent).toContain('本地 HTML：gallery.html');
   expect(imported.pageUrl).toBe('chrome-extension://example/popup.html?workspace=1');
+});
+
+it('searches titles, filenames and source URLs without aborting hidden transfers', async () => {
+  records[archiveKey('1')] = batch('1');
+  records[archiveKey('2')] = { ...batch('2', 'complete'), title: 'Holiday', filename: 'album.zip', sourceUrl: 'https://gallery.test/photos/' };
+  await mount();
+  const firstRow = card('1');
+  const signal = vi.mocked(runArchive).mock.calls[0]![1];
+  const input = container.querySelector<HTMLInputElement>('#task-search')!;
+  for (const term of ['HOLIDAY', 'album.zip', 'gallery.test', 'no-match']) {
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, term);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(card('1')).toBe(firstRow);
+    expect(card('1').hidden).toBe(true);
+    expect(card('2').hidden).toBe(term === 'no-match');
+    expect(signal.aborted).toBe(false);
+  }
+  expect(container.textContent).toContain('没有符合条件的任务');
+  await act(async () => [...container.querySelectorAll('button')].find(el => el.textContent === '清除筛选')!.click());
+  expect(card('1').hidden).toBe(false);
+  expect(runArchive).toHaveBeenCalledTimes(1);
+});
+
+it('clears all completed records including legacy copies while retaining failures, active tasks and unrelated storage', async () => {
+  records[ARCHIVE_KEY] = batch('1', 'complete');
+  records[archiveKey('1')] = batch('1', 'complete');
+  records[archiveKey('2')] = batch('2');
+  records[archiveKey('3')] = batch('3', 'partial');
+  records[archiveKey('4')] = batch('4', 'failed');
+  records.preference = 'keep';
+  await mount();
+  const signal = vi.mocked(runArchive).mock.calls[0]![1];
+  expect(button('2', '删除记录')).toBeUndefined();
+  await act(async () => [...container.querySelectorAll('button')].find(el => el.textContent === '清理已完成记录（1）')!.click());
+  expect(card('1')).toBeNull();
+  expect(Object.keys(records).sort()).toEqual([archiveKey('2'), archiveKey('3'), archiveKey('4'), 'preference'].sort());
+  expect(signal.aborted).toBe(false);
+  expect(container.textContent).toContain('已删除 1 条任务记录');
+  await act(async () => button('3', '删除记录').click());
+  expect(card('3')).toBeNull();
+  expect(card('4')).toBeTruthy();
+  expect(chrome.downloads.showDefaultFolder).not.toHaveBeenCalled();
+});
+
+it('keeps the task record and reports a storage deletion failure', async () => {
+  records[archiveKey('1')] = batch('1', 'complete');
+  await mount();
+  vi.mocked(chrome.storage.local.remove).mockRejectedValueOnce(new Error('storage error'));
+  await act(async () => button('1', '删除记录').click());
+  expect(card('1')).toBeTruthy();
+  expect(container.querySelector('[role=alert]')?.textContent).toBe('无法删除任务记录，请重试。');
+  expect(button('1', '删除记录').disabled).toBe(false);
 });
