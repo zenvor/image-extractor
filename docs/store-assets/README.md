@@ -22,8 +22,8 @@ The existing 440×280 promotional tile remains available as `promo-440x280.png`,
 
 ## Generation direction
 
-- Browse graphic: preserve the popup reference; white and pale lavender, purple brand accents, headline “Find the images. Keep the ones you love.” and “Preview · Select · Download”.
+- Browse graphic: use a landscape-only illustrative popup, with no people, faces or avatars anywhere; white and pale lavender, purple brand accents, headline “Find the images. Keep the ones you love.” and “Preview · Select · Download”.
 - Task graphic: feature the download-manager reference; headline “Your downloads. In order.” and “Search tasks · Filter by status · Clear completed records”; identify the task records as examples.
 - Banner: “Image Extractor”, “Collect images. Simply.” and “Preview, select and save webpage images.”; floating landscape image cards, two purple selection marks and a download arrow; no ratings or unsupported claims.
 
-WhatsApp names and website imagery belong to their respective owners and are not relicensed under MIT. Their use as an example does not imply affiliation or endorsement. The banner's landscape artwork is generated. Store publication remains a separate action.
+WhatsApp names and website imagery belong to their respective owners and are not relicensed under MIT. Their use as an example does not imply affiliation or endorsement. The browsing graphic and banner use generated landscapes, with no people or faces. The download-management graphic contains no portraits. Store publication remains a separate action.
