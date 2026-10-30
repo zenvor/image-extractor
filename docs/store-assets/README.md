@@ -4,6 +4,18 @@ Updated on 2026-10-30 for 1.2.1. The bilingual **1280×800** `screenshot-en.jpg`
 
 ## Promotional artwork
 
+The current dark suite uses real photographs and actual interface captures, with restrained purple accents. [Source details and high-resolution masters](real/README.md).
+
+![Browse and select](real/browse-1280x800.png)
+
+![Download management — single-line action buttons](real/downloads-1280x800.png)
+
+![Brand banner](real/banner-1400x560.png)
+
+The download poster was recaptured at a wider viewport and laid out with a full-width table so the Actions buttons remain on one line. The shipped application code is unchanged by this artwork revision.
+
+## Alternative purple artwork
+
 Three new graphics were created with the built-in image-generation tool from the current interface screenshots. They are promotional illustrations, not unmodified screenshots or download-verification evidence. Generated interface details may differ from the actual product; use the browser captures above for exact UI representation. Original generated dimensions are retained; export to the placement's required dimensions before Store upload.
 
 | Asset | Message |

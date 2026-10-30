@@ -32,7 +32,7 @@
 <details>
 <summary>宣传素材</summary>
 
-![Image Extractor promotional banner](docs/store-assets/promo-banner.png)
+![Image Extractor promotional banner](docs/store-assets/real/banner-1400x560.png)
 
 查看[三张宣传图](docs/store-assets/README.md#promotional-artwork)：选图预览、下载管理和品牌横幅。
 

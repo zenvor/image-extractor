@@ -32,7 +32,7 @@ Download records are demonstration data. Removing a record keeps the downloaded 
 <details>
 <summary>Promotional artwork</summary>
 
-![Image Extractor promotional banner](docs/store-assets/promo-banner.png)
+![Image Extractor promotional banner](docs/store-assets/real/banner-1400x560.png)
 
 View the [three promotional graphics](docs/store-assets/README.md#promotional-artwork), including browsing, download management and a wide brand banner.
 
