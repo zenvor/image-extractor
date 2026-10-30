@@ -4,11 +4,12 @@ Final artwork selected on 2026-10-30. This is the primary promotional suite; the
 
 | Artwork | Placement export | High-resolution master |
 | --- | --- | --- |
+| Combined README showcase | [1600×864](showcase-1600x864.png) | [3840×2074](showcase-4k.png) |
 | Browse and select | [1280×800](browse-1280x800.png) | [3840×2400](browse-4k.png) |
 | Download management | [1280×800](downloads-1280x800.png) | [3840×2400](downloads-4k.png) |
 | Brand banner | [1400×560](banner-1400x560.png) | [3840×1536](banner-4k.png) |
 
-All three combine deterministic typography and compositing with real photography or actual browser screenshots. No generative image model or generative upscaling was used. The composition, decoration and visual direction are final.
+All artwork combines deterministic typography and compositing with real photography or actual browser screenshots. No generative image model or generative upscaling was used. The combined README showcase was composed with Python/Pillow from the same original photographs and source captures. Both interfaces remain visible without overlapping; only scaling, rounded clipping, typography, backgrounds and shadows were applied. No interface text or controls were redrawn.
 
 ## Capture provenance
 

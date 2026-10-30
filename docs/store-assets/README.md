@@ -1,12 +1,14 @@
 # Chrome Web Store assets
 
-Final promotional selection for 1.2.1: **two suites, three posters per suite**. The light landscape suite is the primary presentation; the NASA dark suite remains available as an alternative. AI-generated promotional graphics and rejected design drafts have been removed from the working tree. Existing Store submissions are unchanged.
+Final promotional selection for 1.2.1: **two suites, three posters per suite, plus a combined light README showcase**. The light landscape suite is the primary presentation; the NASA dark suite remains available as an alternative. AI-generated promotional graphics are not included in the published artwork. Existing Store submissions are unchanged.
 
 ## Promotional artwork
 
 ### Primary: light landscapes
 
 White and lavender backgrounds, real ISO Republic photography, actual interface captures and restrained layered composition. [Placement exports, 4K masters and source details](light/README.md).
+
+![Combined browsing and download-management showcase](light/showcase-1600x864.png)
 
 ![Browse and select](light/browse-1280x800.png)
 
