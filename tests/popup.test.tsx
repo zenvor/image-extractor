@@ -61,20 +61,11 @@ async function chooseAction(selector: string) {
   await act(async () => { item!.click(); });
   await flushToasts();
 }
-async function openMore() {
-  const trigger = container.querySelector<HTMLButtonElement>('.more-actions-button')!;
-  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
-  expect(document.querySelector('[role=menu]')).not.toBeNull();
-}
 async function openExtractionOptions() {
   const trigger = container.querySelector<HTMLButtonElement>('.collection-options-trigger')!;
   await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
   await flushToasts();
   expect(document.querySelector('.collection-options[role=menu]')).not.toBeNull();
-}
-async function chooseMoreAction(selector: string) {
-  await openMore();
-  await chooseAction(selector);
 }
 async function search(value: string) {
   const input = container.querySelector<HTMLInputElement>('input[type=search]')!;
@@ -439,8 +430,7 @@ it('cancel all clears hidden choices while preserving displayed images, search a
     expect(container.querySelector<HTMLButtonElement>(selector)?.disabled, selector).toBe(true);
   }
   expect(container.querySelector<HTMLButtonElement>('.copy-links-button')?.disabled).toBe(true);
-  await openMore();
-  expect(document.querySelector('.export-links-button')?.getAttribute('aria-disabled')).toBe('true');
+  expect(container.querySelector<HTMLButtonElement>('.export-links-trigger')?.disabled).toBe(true);
   await act(async () => root!.unmount()); root = undefined;
   await mount();
   expectDownloadCount(0);
@@ -697,12 +687,14 @@ it('copies the full selection from the sidebar, including search-hidden images',
   expect(analysis!.selected).toEqual(['L0', 'L1', 'L2']);
   expect(document.querySelector('[role=menu]')).toBeNull();
 });
-it('exports selected URLs using the page title from More', async () => {
+it('exports selected URLs using the page title from the sidebar', async () => {
   const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
   let filename = '';
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function(this: HTMLAnchorElement) { filename = this.download; });
   await mount();
-  await chooseMoreAction('.export-links-button');
+  const trigger = container.querySelector<HTMLButtonElement>('.export-links-trigger')!;
+  await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+  await chooseAction('.export-links-button');
   expect(filename).toBe('测试图集.txt');
   const blob = create.mock.calls[0]![0] as Blob;
   expect(await blob.text()).toBe(results.filter(item => item.candidate).map(item => item.url).join('\n') + '\n');
@@ -725,25 +717,25 @@ it('opens the shared task overview even when the current webpage has no task', a
   expect(send).toHaveBeenCalledWith({ type: 'OPEN_ARCHIVES' });
 });
 
-it('opens scroll extraction from the header and batch tools from More', async () => {
+it('opens scroll extraction from the header and batch tools from the sidebar', async () => {
   await mount();
   const trigger = container.querySelector<HTMLElement>('.app-header .extraction-method-trigger')!;
   await act(async () => { trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
   await flushToasts();
   await chooseAction('.scroll-extract-item');
   expect(send).toHaveBeenCalledWith({ type: 'ANALYZE', tabId: 7, mode: 'large', scroll: true });
-  expect(container.querySelector('.batch-tools-button')).toBeNull();
-  await chooseMoreAction('.batch-tools-button');
+  expect(container.querySelector('.workspace-sidebar .batch-tools-button')).not.toBeNull();
+  await click('.batch-tools-button');
   expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'chrome-extension://test/tools.html' });
 });
-it('resumes a cancelled archive from More', async () => {
+it('resumes a cancelled archive from the sidebar', async () => {
   const batch: ArchiveBatch = { id: 'cancelled', sourceTabId: 7, pageUrl: fixture().url, title: '当前页', filename: 'own.zip', items: [
     { id: 'cached', url: 'https://images.example/a.jpg', kind: 'large', filename: '001.jpg', status: 'complete', bytes: 100 },
     { id: 'pending', url: 'https://images.example/b.jpg', kind: 'large', filename: '002.jpg', status: 'pending' },
   ], status: 'cancelled', started: Date.now(), updated: Date.now(), cacheUntil: Date.now() + 60000, bytes: 100, message: '', tabId: 98 };
   local['archiveBatch:cancelled'] = batch;
   await mount();
-  await chooseMoreAction('[aria-label="继续未完成下载"]');
+  await click('[aria-label="继续未完成下载"]');
   expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://images.example/*'] });
   expect(send).toHaveBeenCalledWith({ type: 'RESUME_ARCHIVE', batchId: 'cancelled' });
 });
@@ -941,13 +933,13 @@ it('retries the current task failure snapshot regardless of the current selectio
   await mount();
   await click('.deselect-all-button');
   send.mockClear(); request.mockClear();
-  await chooseMoreAction('.retry-failed-button');
+  await click('.retry-failed-button');
   expect(request).toHaveBeenCalledWith({ permissions: ['downloads'], origins: ['https://failed.example/*'] });
   expect(send).toHaveBeenCalledWith({ type: 'RETRY_ARCHIVE', batchId: 'partial' });
   expect(analysis!.selected).toEqual([]);
   expect(request.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[0]!);
   request.mockResolvedValue(false); send.mockClear();
-  await chooseMoreAction('.retry-failed-button');
+  await click('.retry-failed-button');
   expect(send).not.toHaveBeenCalled();
   expect(container.textContent).toContain('未获得权限');
 });
@@ -1016,25 +1008,23 @@ it('locks the speed segments while a save is pending', async () => {
   expect(container.querySelector('.download-concurrency')?.textContent).toBe('30 并发');
 });
 
-it('keeps page order and separates common sidebar actions from More', async () => {
+it('keeps page order and exposes utility actions in the sidebar', async () => {
   analysis!.results = [...analysis!.results].reverse();
   await mount();
   expect([...container.querySelectorAll('.image-name')].map(node => node.textContent)).toEqual(['2','1','0']);
-  expect(container.querySelector('.workspace-sidebar > .language-control')).toBeTruthy();
+  expect(container.querySelector('.sidebar-bottom > .language-control')).toBeTruthy();
   expect(container.querySelector('.collection-options-trigger')?.textContent).toContain('全部启用');
   expect(document.querySelector('.collection-options')).toBeNull();
   await click('.preview-background-control [role=checkbox]');
   expect(container.querySelector('main')?.dataset.darkPreview).toBe('true');
-  expect(container.querySelector('.more-actions-button')).not.toBeNull();
+  expect(container.querySelector('.more-actions-button')).toBeNull();
   expect(document.querySelector('[role=menu]')).toBeNull();
-  for (const selector of ['.copy-links-button', '.view-task-button', '.more-actions-button']) {
+  for (const selector of ['.copy-links-button', '.view-task-button', '.batch-tools-button', '.export-links-trigger']) {
     expect(container.querySelector(selector)?.closest('.workspace-sidebar')).toBeTruthy();
   }
-  await openMore();
-  expect(document.querySelector('[role=menu] .export-links-button')).not.toBeNull();
-  expect(document.querySelector('[role=menu] .batch-tools-button')).not.toBeNull();
+  expect(container.querySelector('.workspace-sidebar .export-links-trigger')).not.toBeNull();
+  expect(document.querySelector('[role=menu] .batch-tools-button')).toBeNull();
   expect(container.querySelector('.workspace-sidebar .view-task-button')).not.toBeNull();
-  await act(async () => { document.querySelector('[role=menu]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
   expect(document.querySelector('[role=menu]')).toBeNull();
   expect(analysis!.selected).toEqual(['L0','L1','L2']);
 });
@@ -1268,9 +1258,7 @@ it('keeps zero-selection bulk actions disabled while single-image download remai
   await mount();
   expectDownloadCount(0);
   for (const selector of ['.zip-button', '.copy-links-button']) expect(container.querySelector<HTMLButtonElement>(selector)?.disabled).toBe(true);
-  await openMore();
-  expect(document.querySelector('.export-links-button')?.getAttribute('aria-disabled')).toBe('true');
-  await act(async () => { document.querySelector('[role=menu]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+  expect(container.querySelector<HTMLButtonElement>('.export-links-trigger')?.disabled).toBe(true);
   await click('.image-item .item-download');
   expect(send).toHaveBeenCalledWith({ type: 'DOWNLOAD', job: 'test', selected: ['L0'] });
   expect(analysis!.selected).toEqual([]);
