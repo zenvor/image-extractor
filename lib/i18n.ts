@@ -28,6 +28,7 @@ function apply(value: unknown) {
 function extensionStorage() { return typeof chrome !== 'undefined' && chrome.runtime?.id ? chrome.storage : undefined; }
 /** Initialize before mounting React so the first frame uses the saved language. */
 export async function initializeLocale() {
+  apply('auto');
   const storage = extensionStorage();
   if (storage) {
     let changed = false;

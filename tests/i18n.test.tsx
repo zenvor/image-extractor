@@ -73,3 +73,19 @@ it('localizes task progress and partial failure feedback', async () => {
   expect(feedback.detail).toContain('1 succeeded, 1 failed');
   expect(feedback.summary).toBe('Saved 1 · 1 failed');
 });
+
+it('uses browser language during startup before applying the saved preference', async () => {
+  let finish!: (value: Record<string, string>) => void;
+  vi.stubGlobal('chrome', {
+    runtime: { id: 'test' }, i18n: { getUILanguage: () => 'en-US' },
+    storage: { local: { get: vi.fn(() => new Promise(resolve => { finish = resolve; })) }, onChanged: { addListener: vi.fn() } },
+  });
+  const ready = initializeLocale();
+  expect(getLocale()).toBe('en');
+  expect(document.documentElement.lang).toBe('en');
+  expect(t('正在读取页面与设置…')).toBe(en['正在读取页面与设置…']);
+  finish({ [LANGUAGE_KEY]: 'zh-CN' });
+  await ready;
+  expect(getLocale()).toBe('zh-CN');
+  expect(document.documentElement.lang).toBe('zh-CN');
+});

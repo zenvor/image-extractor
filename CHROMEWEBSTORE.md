@@ -102,6 +102,8 @@ Planned distribution: free, public. Confirm country/region settings in dashboard
 
 ## Version history
 
+Review fixes (2026-10-30): loading announcements initially follow the browser language, then the saved preference. Removing a completed retry record restores retry availability on its source task. The bilingual READMEs use the combined light showcase; Store screenshots remain separate.
+
 Popup loading update (2026-10-30): show skeleton placeholders for the header, sidebar controls and image gallery while restoring the page and settings. Refresh localized popup screenshots before Store submission.
 
 | Version | Date | Changes | Status |

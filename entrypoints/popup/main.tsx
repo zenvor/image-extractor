@@ -7,8 +7,9 @@ import '../../assets/styles.css';
 
 async function start() {
   const root = createRoot(document.getElementById('app')!);
+  const localeReady = initializeLocale();
   root.render(<PopupSkeleton preview={preview} />);
-  const [, snapshot] = await Promise.all([initializeLocale(), loadPopupSnapshot()]);
+  const [, snapshot] = await Promise.all([localeReady, loadPopupSnapshot()]);
   root.render(<App initialSnapshot={snapshot} />);
 }
 void start();

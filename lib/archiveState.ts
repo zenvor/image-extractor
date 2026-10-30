@@ -53,6 +53,14 @@ export async function removeArchiveRecords(ids: string[], completedOnly = false)
     .filter(batch => requested.has(batch.id) && !archiveActive(batch) && (!completedOnly || batch.status === 'complete'))
     .map(batch => batch.id));
   const keys = Object.entries(values).filter(([key, value]) => isArchiveKey(key) && removable.has((value as ArchiveBatch | undefined)?.id || '')).map(([key]) => key);
+  const updates: Record<string, ArchiveBatch> = {};
+  for (const [key, value] of Object.entries(values)) {
+    const batch = value as ArchiveBatch | undefined;
+    if (!isArchiveKey(key) || !batch?.retryBatchId || removable.has(batch.id) || !removable.has(batch.retryBatchId)) continue;
+    const { retryBatchId: _retryBatchId, ...source } = batch;
+    updates[key] = source;
+  }
+  if (Object.keys(updates).length) await chrome.storage.local.set(updates);
   if (keys.length) await chrome.storage.local.remove(keys);
   return removable.size;
 }
