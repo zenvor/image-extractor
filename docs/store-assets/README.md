@@ -1,41 +1,35 @@
 # Chrome Web Store assets
 
-Updated on 2026-10-30 for 1.2.1. The bilingual **1280×800** `screenshot-en.jpg` and `screenshot-zh.jpg` are browser captures of the current popup centered on a neutral canvas. The [screenshot gallery](../screenshots/README.md) records the capture setup, curated WhatsApp image selection and demonstration task records. Existing Store submissions are unchanged.
+Final promotional selection for 1.2.1: **two suites, three posters per suite**. The light landscape suite is the primary presentation; the NASA dark suite remains available as an alternative. AI-generated promotional graphics and rejected design drafts have been removed from the working tree. Existing Store submissions are unchanged.
 
 ## Promotional artwork
 
-The current dark suite uses real photographs and actual interface captures, with restrained purple accents. [Source details and high-resolution masters](real/README.md).
+### Primary: light landscapes
+
+White and lavender backgrounds, real ISO Republic photography, actual interface captures and restrained layered composition. [Placement exports, 4K masters and source details](light/README.md).
+
+![Browse and select](light/browse-1280x800.png)
+
+![Download management](light/downloads-1280x800.png)
+
+![Brand banner](light/banner-1400x560.png)
+
+### Alternative: NASA dark
+
+Real NASA photography and actual interface captures, with purple accents. [Placement exports, 4K masters and source details](real/README.md).
 
 ![Browse and select](real/browse-1280x800.png)
 
-![Download management — single-line action buttons](real/downloads-1280x800.png)
+![Download management](real/downloads-1280x800.png)
 
 ![Brand banner](real/banner-1400x560.png)
 
-The download poster was recaptured at a wider viewport and laid out with a full-width table so the Actions buttons remain on one line. The shipped application code is unchanged by this artwork revision.
+Both suites provide 1280×800 browsing and download posters, 1400×560 banners, and high-resolution masters. Download task records are explicitly seeded demonstrations; action-button labels stay on one line. No product UI code changed during the artwork work.
 
-## Alternative purple artwork
+## Additional listing assets
 
-Three new graphics were created with the built-in image-generation tool from the current interface screenshots. They are promotional illustrations, not unmodified screenshots or download-verification evidence. Generated interface details may differ from the actual product; use the browser captures above for exact UI representation. Original generated dimensions are retained; export to the placement's required dimensions before Store upload.
+The bilingual **1280×800** `screenshot-en.jpg` and `screenshot-zh.jpg` remain browser captures of the current popup with a curated WhatsApp example. These are separate localized UI screenshots, not a third promotional suite. The [screenshot gallery](../screenshots/README.md) records their capture setup and credits.
 
-| Asset | Message |
-| --- | --- |
-| [Browse and select](promo-browse.png) | Find the images. Keep the ones you love. |
-| [Download management](promo-downloads.png) | Your downloads. In order. |
-| [Wide brand banner](promo-banner.png) | Collect images. Simply. |
+The existing logo-only 440×280 tile remains available as `promo-440x280.png`, with editable source `promo-440x280.svg`. It is not AI-generated; `npm run icons` regenerates it.
 
-![Browse and select](promo-browse.png)
-
-![Download management](promo-downloads.png)
-
-![Brand banner](promo-banner.png)
-
-The existing 440×280 promotional tile remains available as `promo-440x280.png`, with its editable `promo-440x280.svg` source. `npm run icons` regenerates that tile, not the new AI artwork.
-
-## Generation direction
-
-- Browse graphic: use a landscape-only illustrative popup, with no people, faces or avatars anywhere; white and pale lavender, purple brand accents, headline “Find the images. Keep the ones you love.” and “Preview · Select · Download”.
-- Task graphic: feature the download-manager reference; headline “Your downloads. In order.” and “Search tasks · Filter by status · Clear completed records”; identify the task records as examples.
-- Banner: “Image Extractor”, “Collect images. Simply.” and “Preview, select and save webpage images.”; floating landscape image cards, two purple selection marks and a download arrow; no ratings or unsupported claims.
-
-WhatsApp names and website imagery belong to their respective owners and are not relicensed under MIT. Their use as an example does not imply affiliation or endorsement. The browsing graphic and banner use generated landscapes, with no people or faces. The download-management graphic contains no portraits. Store publication remains a separate action.
+Photography and screenshot provenance are documented with each suite. No third-party endorsement is implied. Publishing to the Chrome Web Store remains a separate action.

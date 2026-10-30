@@ -75,6 +75,8 @@ Privacy policy: https://gist.github.com/zenvor/054206a25dc00fe4cf1de693528d2635 
 | English screenshot | docs/screenshots/popup-en.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-en.jpg, 1280×800 |
 | Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-zh.jpg, 1280×800 |
 | Small promotional tile | docs/store-assets/promo-440x280.svg | 440×280; generated PNG export available for Store upload |
+| Primary promotional suite | docs/store-assets/light/README.md | Three final light posters; placement exports and 4K masters |
+| Alternative promotional suite | docs/store-assets/real/README.md | Three retained NASA dark posters; placement exports and 4K masters |
 
 Vector artwork update (2026-10-26): `assets/logo-source.svg` is the single logo source; the earlier PNG source was removed. Both READMEs and the extension interface display SVG directly; manifest PNGs and both promotional tile formats are generated from it. Both localized screenshots were recaptured with the new logo in an isolated candidate preview (see docs/screenshots/README.md for scope). The existing published ZIPs and submitted Store assets still contain the earlier artwork. Review and upload the refreshed assets with the next Store submission; this source change does not submit an update.
 

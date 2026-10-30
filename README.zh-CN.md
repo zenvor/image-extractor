@@ -14,27 +14,31 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">反馈问题</a>
 </p>
 
-![Chrome 中的图片预览、筛选和手动选图界面](docs/screenshots/popup-zh-CN.jpg)
+![Image Extractor：预览、选择并保存网页图片](docs/store-assets/light/banner-1400x560.png)
 
-新版界面，展示从 [WhatsApp 官网](https://www.whatsapp.com/)选取的图片。[截图说明](docs/screenshots/README.md)。
+使用真实风景照片和真实扩展界面的亮色宣传套图。另保留 [NASA 深色版](docs/store-assets/real/README.md)。
 
 <details>
-<summary>查看示例网页与下载管理界面</summary>
+<summary>查看选图与下载管理海报</summary>
 
-![用于演示的 WhatsApp 官网](docs/screenshots/whatsapp-source.jpg)
+![图片浏览与选择](docs/store-assets/light/browse-1280x800.png)
 
-![支持搜索、状态筛选及记录清理的下载管理界面](docs/screenshots/downloads-zh-CN.jpg)
+![下载任务搜索、筛选与记录清理](docs/store-assets/light/downloads-1280x800.png)
 
-下载记录为演示数据。删除任务记录不会删除已下载的文件。
+图片结果经过精选，下载记录为演示数据。[高清素材与来源说明](docs/store-assets/light/README.md)。
 
 </details>
 
 <details>
-<summary>宣传素材</summary>
+<summary>查看中英文原始界面截图与示例网页</summary>
 
-![Image Extractor promotional banner](docs/store-assets/real/banner-1400x560.png)
+![简体中文界面](docs/screenshots/popup-zh-CN.jpg)
 
-查看[三张宣传图](docs/store-assets/README.md#promotional-artwork)：选图预览、下载管理和品牌横幅。
+![下载管理界面](docs/screenshots/downloads-zh-CN.jpg)
+
+![WhatsApp 示例网页](docs/screenshots/whatsapp-source.jpg)
+
+[截图来源与演示数据说明](docs/screenshots/README.md)。
 
 </details>
 
@@ -107,6 +111,7 @@ npm run build
 
 ## 致谢
 
+- 宣传照片来自 [ISO Republic](https://isorepublic.com/media-category/landscape/) 和 [NASA](https://www.nasa.gov/gallery/lunar-flyby/)，详见[摄影署名、许可与截图说明](docs/store-assets/README.md)。
 - [gallery-dl](https://github.com/mikf/gallery-dl)：图床公开地址与页面格式的参考，详见[参考来源及实现说明](docs/hosted-images.md#reference-and-attribution)。
 - 界面示例使用 [WhatsApp 官网](https://www.whatsapp.com/)的图像。WhatsApp 品牌和图像归各自权利人所有，不表示合作或背书；详见[截图与宣传素材说明](docs/store-assets/README.md)。
 

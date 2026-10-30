@@ -14,27 +14,31 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
 </p>
 
-![Image preview, filters and manual selection in Chrome](docs/screenshots/popup-en.jpg)
+![Image Extractor: preview, select and save webpage images](docs/store-assets/light/banner-1400x560.png)
 
-Current interface with a curated selection of images from the [WhatsApp homepage](https://www.whatsapp.com/). [Screenshot details](docs/screenshots/README.md).
+A light promotional suite featuring real landscape photography and the actual extension interface. The [NASA dark suite](docs/store-assets/real/README.md) is also available.
 
 <details>
-<summary>Source webpage and download manager</summary>
+<summary>Browse and download management posters</summary>
 
-![WhatsApp homepage used for this demonstration](docs/screenshots/whatsapp-source.jpg)
+![Browse and select images](docs/store-assets/light/browse-1280x800.png)
 
-![Download manager with search, status filters and record cleanup](docs/screenshots/downloads-en.jpg)
+![Search, filter and clean up download records](docs/store-assets/light/downloads-1280x800.png)
 
-Download records are demonstration data. Removing a record keeps the downloaded files.
+Image results are curated; download records are demonstration data. [High-resolution artwork and source details](docs/store-assets/light/README.md).
 
 </details>
 
 <details>
-<summary>Promotional artwork</summary>
+<summary>Original interface screenshots and example webpage</summary>
 
-![Image Extractor promotional banner](docs/store-assets/real/banner-1400x560.png)
+![English interface](docs/screenshots/popup-en.jpg)
 
-View the [three promotional graphics](docs/store-assets/README.md#promotional-artwork), including browsing, download management and a wide brand banner.
+![Download manager](docs/screenshots/downloads-en.jpg)
+
+![WhatsApp example webpage](docs/screenshots/whatsapp-source.jpg)
+
+[Screenshot provenance and demonstration data](docs/screenshots/README.md).
 
 </details>
 
@@ -107,6 +111,7 @@ Issues and pull requests are welcome. For a bug report, include a public example
 
 ## Acknowledgements
 
+- Promotional photography comes from [ISO Republic](https://isorepublic.com/media-category/landscape/) and [NASA](https://www.nasa.gov/gallery/lunar-flyby/). [Credits, licenses and capture details](docs/store-assets/README.md).
 - [gallery-dl](https://github.com/mikf/gallery-dl) informed the image-host support through its public URL and page formats. See [reference and attribution details](docs/hosted-images.md#reference-and-attribution).
 - Interface examples use imagery from the [WhatsApp homepage](https://www.whatsapp.com/). WhatsApp and its imagery belong to their respective owners; no affiliation or endorsement is implied. [Screenshot and promotional asset details](docs/store-assets/README.md).
 
