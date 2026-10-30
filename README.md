@@ -14,16 +14,16 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
 </p>
 
-![Image Extractor: preview, select and save webpage images](docs/store-assets/light/banner-1400x560.png)
+![Image Extractor: preview, select and save webpage images](docs/store-assets/light/browse-1280x800.png)
 
 A light promotional suite featuring real landscape photography and the actual extension interface. The [NASA dark suite](docs/store-assets/real/README.md) is also available.
 
 <details>
-<summary>Browse and download management posters</summary>
-
-![Browse and select images](docs/store-assets/light/browse-1280x800.png)
+<summary>Download management poster and brand banner</summary>
 
 ![Search, filter and clean up download records](docs/store-assets/light/downloads-1280x800.png)
+
+![Image Extractor brand banner](docs/store-assets/light/banner-1400x560.png)
 
 Image results are curated; download records are demonstration data. [High-resolution artwork and source details](docs/store-assets/light/README.md).
 

@@ -14,16 +14,16 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">反馈问题</a>
 </p>
 
-![Image Extractor：预览、选择并保存网页图片](docs/store-assets/light/banner-1400x560.png)
+![Image Extractor：预览、选择并保存网页图片](docs/store-assets/light/browse-1280x800.png)
 
 使用真实风景照片和真实扩展界面的亮色宣传套图。另保留 [NASA 深色版](docs/store-assets/real/README.md)。
 
 <details>
-<summary>查看选图与下载管理海报</summary>
-
-![图片浏览与选择](docs/store-assets/light/browse-1280x800.png)
+<summary>查看下载管理海报与品牌横幅</summary>
 
 ![下载任务搜索、筛选与记录清理](docs/store-assets/light/downloads-1280x800.png)
+
+![Image Extractor 品牌横幅](docs/store-assets/light/banner-1400x560.png)
 
 图片结果经过精选，下载记录为演示数据。[高清素材与来源说明](docs/store-assets/light/README.md)。
 
