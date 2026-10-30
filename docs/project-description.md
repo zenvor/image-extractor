@@ -1,6 +1,6 @@
 # Project descriptions
 
-Repository: `zenvor/image-extractor-extension`
+Repository: `zenvor/image-extractor`
 
 ## GitHub About (English)
 

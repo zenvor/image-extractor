@@ -9,9 +9,9 @@
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong></p>
 
 <p align="center">
-  <a href="https://github.com/zenvor/image-extractor-extension/releases/latest">下载扩展</a> ·
+  <a href="https://github.com/zenvor/image-extractor/releases/latest">下载扩展</a> ·
   <a href="docs/usage.zh-CN.md">使用说明</a> ·
-  <a href="https://github.com/zenvor/image-extractor-extension/issues">反馈问题</a>
+  <a href="https://github.com/zenvor/image-extractor/issues">反馈问题</a>
 </p>
 
 ![Image Extractor：图片浏览与下载管理](docs/store-assets/light/showcase-1600x864.png)
@@ -58,7 +58,7 @@
 
 需要 **Chrome 120 或更新版本**。
 
-1. 打开 **[最新发布页](https://github.com/zenvor/image-extractor-extension/releases/latest)**，在 **Assets** 中下载 `image-extractor-*-chrome.zip` 安装包。**Source code** 是供开发者使用的源码压缩包。
+1. 打开 **[最新发布页](https://github.com/zenvor/image-extractor/releases/latest)**，在 **Assets** 中下载 `image-extractor-*-chrome.zip` 安装包。**Source code** 是供开发者使用的源码压缩包。
 2. 解压到电脑上准备长期保留的文件夹。
 3. 打开 `chrome://extensions`，开启「开发者模式」，点击「加载已解压的扩展程序」。
 4. 选择解压后包含 `manifest.json` 的文件夹，打开网页并点击扩展图标。
@@ -71,8 +71,8 @@
 需要 Git 和 Node.js 22.12+，也可使用满足要求的更新 LTS 版本。
 
 ```sh
-git clone https://github.com/zenvor/image-extractor-extension.git
-cd image-extractor-extension
+git clone https://github.com/zenvor/image-extractor.git
+cd image-extractor
 npm ci
 npm run build
 ```

@@ -66,7 +66,7 @@ Stop the local fixture server with Ctrl+C after acceptance. No scheduled monitor
 
 - All 428 automated tests in 22 files, type checking, the isolated production build and production-bundle checks passed. An earlier run hit the existing accelerated timing assertion; the complete rerun passed without changing the assertion.
 - The separate Chrome parser harness passed all eleven provider fixtures and the inert-HTML fixture (12/12). Real saved HTML produced original URLs for Vipr, Pixhost and ImageTwist. This does not establish image-download acceptance for every provider; see [host validation boundaries](hosted-images.md#validation-boundaries).
-- [Release workflow 40243025730](https://github.com/zenvor/image-extractor-extension/actions/runs/40243025730) completed successfully for tag `v1.1.0`, commit `f0a956499033076ca515e7c5bb3b764459a37c0d`.
+- [Release workflow 40243025730](https://github.com/zenvor/image-extractor/actions/runs/40243025730) completed successfully for tag `v1.1.0`, commit `f0a956499033076ca515e7c5bb3b764459a37c0d`.
 - Downloaded the public release ZIP and checked its checksum, all 35 ZIP entries, manifest version 1.1.0 and bundled license notices. Size: 337931 bytes; SHA-256: `d0d8b50e69e96a3b4060f91826ec72eb71c11b07e36c5c8a2f9133f7c51dc361`.
 - The existing installed extension was not reloaded. GitHub publication did not update the previously submitted Chrome Web Store package.
 

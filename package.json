@@ -1,5 +1,5 @@
 {
-  "name": "image-extractor-extension",
+  "name": "image-extractor",
   "version": "1.2.1",
   "private": true,
   "type": "module",

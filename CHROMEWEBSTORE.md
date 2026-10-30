@@ -86,7 +86,7 @@ Publisher display name currently: luckxiaomi@gmail.com. Publisher ID: 82288fad-1
 
 Public contact email: luckxiaomi@gmail.com (public use authorized by the user).
 
-Homepage/support URL: https://github.com/zenvor/image-extractor-extension. The repository is public; support requests can be opened in its Issues section.
+Homepage/support URL: https://github.com/zenvor/image-extractor. The repository is public; support requests can be opened in its Issues section.
 
 Planned distribution: free, public. Confirm country/region settings in dashboard.
 

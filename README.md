@@ -9,9 +9,9 @@
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
-  <a href="https://github.com/zenvor/image-extractor-extension/releases/latest">Download</a> ·
+  <a href="https://github.com/zenvor/image-extractor/releases/latest">Download</a> ·
   <a href="docs/usage.md">User guide</a> ·
-  <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
+  <a href="https://github.com/zenvor/image-extractor/issues">Report an issue</a>
 </p>
 
 ![Image Extractor: browse images and manage downloads](docs/store-assets/light/showcase-1600x864.png)
@@ -58,7 +58,7 @@ Free and open source. No account required. English and Simplified Chinese interf
 
 Requires **Chrome 120 or newer**.
 
-1. Open the **[latest release](https://github.com/zenvor/image-extractor-extension/releases/latest)** and download the `image-extractor-*-chrome.zip` package under **Assets**. The **Source code** archives are for developers.
+1. Open the **[latest release](https://github.com/zenvor/image-extractor/releases/latest)** and download the `image-extractor-*-chrome.zip` package under **Assets**. The **Source code** archives are for developers.
 2. Extract the ZIP to a folder you will keep on your computer.
 3. Open `chrome://extensions`, enable **Developer mode**, and select **Load unpacked**.
 4. Choose the extracted folder containing `manifest.json`, then open a webpage and click the extension icon.
@@ -71,8 +71,8 @@ The release includes a SHA-256 checksum alongside the ZIP. Finish active downloa
 Requires Git and Node.js 22.12+ or a newer supported LTS release.
 
 ```sh
-git clone https://github.com/zenvor/image-extractor-extension.git
-cd image-extractor-extension
+git clone https://github.com/zenvor/image-extractor.git
+cd image-extractor
 npm ci
 npm run build
 ```
