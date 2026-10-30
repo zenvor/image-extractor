@@ -14,7 +14,7 @@
   <a href="https://github.com/zenvor/image-extractor/issues">反馈问题</a>
 </p>
 
-![Image Extractor：图片浏览与下载管理](docs/store-assets/light/showcase-1600x864.png)
+[![Image Extractor：图片浏览与下载管理](docs/store-assets/light/showcase-4k.png)](https://raw.githubusercontent.com/zenvor/image-extractor/refs/heads/master/docs/store-assets/light/showcase-4k.png)
 
 使用真实风景照片和真实扩展界面的亮色宣传套图。另保留 [NASA 深色版](docs/store-assets/real/README.md)。
 

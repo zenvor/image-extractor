@@ -14,7 +14,7 @@
   <a href="https://github.com/zenvor/image-extractor/issues">Report an issue</a>
 </p>
 
-![Image Extractor: browse images and manage downloads](docs/store-assets/light/showcase-1600x864.png)
+[![Image Extractor: browse images and manage downloads](docs/store-assets/light/showcase-4k.png)](https://raw.githubusercontent.com/zenvor/image-extractor/refs/heads/master/docs/store-assets/light/showcase-4k.png)
 
 A light promotional suite featuring real landscape photography and the actual extension interface. The [NASA dark suite](docs/store-assets/real/README.md) is also available.
 

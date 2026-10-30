@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-30. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
+Last updated: 2026-10-30. GitHub release version: 1.2.1. Store submission on 2026-10-30: version 1.2.1 and the four approved graphic assets submitted together; dashboard confirmed "Your extension was submitted for review" and "Pending review". Automatic publication after approval remains enabled. Previously published version: 1.0.0. GitHub publication does not submit a Store update.
 
 ## Store listing
 
@@ -69,12 +69,20 @@ Privacy policy: https://gist.github.com/zenvor/054206a25dc00fe4cf1de693528d2635 
 
 ## Assets
 
+Store assets saved and submitted with version 1.2.1 on 2026-10-30:
+
+- Global screenshots, in order: `docs/store-assets/light/browse-1280x800.png` and `docs/store-assets/light/downloads-1280x800.png`.
+- Small promo tile: `docs/store-assets/light/store-cover-440x280.png` (approved E design without the download icon).
+- Marquee promo tile: `docs/store-assets/light/banner-1400x560.png`.
+- Previous global screenshot, small promo tile and Chinese localized screenshot were removed from the draft. English and Chinese listings now use the new global screenshots.
+- All four uploads are RGB PNGs at the dashboard's required dimensions. Previewed both screenshots and promotional tiles after saving. The subsequent authorized submission included the GitHub Release ZIP `image-extractor-1.2.1-chrome.zip`; SHA-256 matched its release checksum: `5d55cc51672c7247903cf476adcdd7ce86305eab798c7f769247be701b79b399`. The dashboard recognized version 1.2.1 before submission.
+
 | Asset | Current source | Submission readiness |
 | --- | --- | --- |
 | Icon | public/icons/128.png | Verify PNG dimensions and package presence |
 | English screenshot | docs/screenshots/popup-en.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-en.jpg, 1280×800 |
 | Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-zh.jpg, 1280×800 |
-| Small promotional tile | docs/store-assets/promo-440x280.svg | 440×280; generated PNG export available for Store upload |
+| Small promotional tile | docs/store-assets/light/store-cover-440x280.png | Approved E cover without download icon; submitted with 1.2.1 |
 | Primary promotional suite | docs/store-assets/light/README.md | Three final light posters; placement exports and 4K masters |
 | Alternative promotional suite | docs/store-assets/real/README.md | Three retained NASA dark posters; placement exports and 4K masters |
 
@@ -108,7 +116,7 @@ Popup loading update (2026-10-30): show skeleton placeholders for the header, si
 
 | Version | Date | Changes | Status |
 | --- | --- | --- | --- |
-| 1.2.1 | 2026-10-30 | Stack Download task and More on separate full-width rows in the popup sidebar; show image-type filters in a scrollable popover without shifting sidebar controls; simplify extraction-scope guidance; display each download task's creation date and time; add task search, status filters, individual record deletion and completed-record cleanup while keeping downloaded files; show skeleton placeholders while loading the task overview | Prepared for GitHub release; refreshed bilingual popup and download screenshots; Store submission remains separate |
+| 1.2.1 | 2026-10-30 | Stack Download task and More on separate full-width rows in the popup sidebar; show image-type filters in a scrollable popover without shifting sidebar controls; simplify extraction-scope guidance; display each download task's creation date and time; add task search, status filters, individual record deletion and completed-record cleanup while keeping downloaded files; show skeleton placeholders while loading the task overview | GitHub release published; submitted to Chrome Web Store with refreshed screenshots and promotional tiles on 2026-10-30; Pending review, automatic publication enabled |
 | 1.2.0 | 2026-10-29 | Preserve extracted results during lazy loading and scroll extraction; show 21 images per page without replaying selection animations; constrain tall and failed previews; streamline extraction, clipboard, export and language controls; refine rounded surfaces, hover feedback and checkbox contrast; keep settings stable while saving; improve download summaries, progress and failure-detail dialogs | Prepared for GitHub release; no new permissions; refresh popup and download-page screenshots before Store submission |
 | 1.1.0 | 2026-10-26 | Eleven image-host provider families for forum original lookup; optional detail access, cancellation and shared budgets | GitHub 1.1.0; not submitted to Chrome Web Store |
 | 1.0.0 | 2026-10-25 | First stable release; free extraction, supported original matching and ZIP downloads | Pending review; auto-publish enabled |
