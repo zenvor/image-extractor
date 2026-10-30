@@ -204,7 +204,7 @@ html:has(body.popup) { height: 600px; overflow: hidden; }
 .empty { min-height: 100%; }
 .download-footer { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
 .download-selection h3 { font-weight: 600; }
-.sidebar-utility-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.sidebar-utility-actions { display: flex; flex-direction: column; gap: 6px; }
 .sidebar-utility-actions > button { min-width: 0; }
 .zip-button { width: 100%; min-width: 0; }
 html:has(body.task-body) { min-height: 100%; background: var(--surface-workspace); }
@@ -230,6 +230,7 @@ html:has(body.task-body) { min-height: 100%; background: var(--surface-workspace
 .tasks-list { container-type: inline-size; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-card); }
 .tasks-list > [data-slot="table-container"] { overflow: visible; }
 .tasks-table { table-layout: fixed; }
+.tasks-table tbody > tr[hidden] { display: none; }
 .tasks-table th, .tasks-table td { white-space: normal; overflow-wrap: anywhere; }
 .tasks-table thead { background: color-mix(in oklch, var(--muted) 45%, var(--card)); }
 .tasks-table th { height: 40px; padding-inline: 20px; color: var(--muted-foreground); font-size: 12px; font-weight: 400; }

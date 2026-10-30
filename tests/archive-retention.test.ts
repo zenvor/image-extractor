@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { ARCHIVE_HISTORY, ARCHIVE_KEY, archiveKey, pruneArchives, readArchive, recoverArchive, resumeArchive, retryArchive, startArchive } from '../lib/archiveState';
+import { ARCHIVE_HISTORY, ARCHIVE_KEY, archiveKey, canRetryArchive, removeArchiveRecords, pruneArchives, readArchive, recoverArchive, resumeArchive, retryArchive, startArchive } from '../lib/archiveState';
 import { purgeStaleArchiveFiles } from '../lib/archiveFiles';
 import type { ArchiveBatch, ImageResult } from '../lib/types';
 
@@ -340,4 +340,23 @@ it('a directory removed concurrently by another page does not fail the purge or 
   vi.stubGlobal('navigator', { storage: { getDirectory: async () => ({ getDirectoryHandle: async () => parent }) } });
   await expect(purgeStaleArchiveFiles()).resolves.toBeUndefined();
   expect(removeEntry.mock.calls.map(call => call[0])).toEqual([a, b]);
+});
+
+it('clears retry links in both source copies when deleting a completed retry', async () => {
+  const source = record('source', { status: 'partial', retryBatchId: 'retry', items: [{ id: '0', url: 'https://images.example.org/0.jpg', kind: 'large', filename: '001.jpg', status: 'failed' }] });
+  const s = store([source, record('retry', { retryOf: 'source' })], source);
+  stubChrome(s.local);
+  expect(await removeArchiveRecords(['retry'], true)).toBe(1);
+  expect(await readArchive('retry')).toBeUndefined();
+  expect(canRetryArchive(await readArchive('source'))).toBe(true);
+  expect((s.data[ARCHIVE_KEY] as ArchiveBatch).retryBatchId).toBeUndefined();
+});
+
+it('keeps the retry link when the requested retry is still active', async () => {
+  const source = record('source', { status: 'partial', retryBatchId: 'retry' });
+  const s = store([source, record('retry', { retryOf: 'source', status: 'fetching' })]);
+  stubChrome(s.local);
+  expect(await removeArchiveRecords(['retry'])).toBe(0);
+  expect((await readArchive('source'))?.retryBatchId).toBe('retry');
+  expect(s.local.set).not.toHaveBeenCalled();
 });

@@ -60,7 +60,7 @@ export function ExtractionOptions({ preview, initialOptions }: { preview: boolea
           {item.label}
         </DropdownMenuCheckboxItem>)}
         <DropdownMenuSeparator />
-        <DropdownMenuLabel id={`${id}-hint`} className="font-normal text-muted-foreground">{t('页面图像始终包含；修改后重新提取生效。')}</DropdownMenuLabel>
+        <DropdownMenuLabel id={`${id}-hint`} className="font-normal text-muted-foreground">{t('更改后下次提取生效')}</DropdownMenuLabel>
       </DropdownMenuContent>
     </DropdownMenu>
     {message && <p role="status" className="error text-xs">{translateMessage(message)}</p>}

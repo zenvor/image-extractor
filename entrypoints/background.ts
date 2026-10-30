@@ -10,7 +10,7 @@ import type { AnalysisState, ImageResult, Request, SelectionMode } from '../lib/
 import { advanceDownloads, downloadSingleImage, failDownloads, startDownloads } from '../lib/downloads';
 import { withTimeout } from '../lib/timeout';
 import { analysisFilter, defaultImageFilter, filterImageResults, selectBySize } from '../lib/selection';
-import { resumeArchive, retryArchive, startArchive, interruptArchive, recoverArchive, pruneArchives, openArchivePage } from '../lib/archiveState';
+import { resumeArchive, retryArchive, startArchive, interruptArchive, recoverArchive, pruneArchives, openArchivePage, removeArchiveRecords } from '../lib/archiveState';
 import { readAnalysis, findAnalysis, saveAnalysis, clearAnalysis } from '../lib/analysisState';
 import { persistPopupView, readSavedPopupView } from '../lib/popupViewPersistence';
 
@@ -124,7 +124,7 @@ export default defineBackground(() => {
     if (await chrome.permissions.contains({ permissions: ['downloads'] }) && attachDownloadListener()) await advanceDownloads(true);
   }
   chrome.runtime.onMessage.addListener((message: Request, sender, respond) => {
-    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'SAVE_POPUP_VIEW', 'LOAD_POPUP_VIEW', 'IMPORT_CAPTURE', 'HOSTED_ORIGINAL', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
+    if (sender.id !== chrome.runtime.id || !message || !['ANALYZE', 'SAVE_POPUP_VIEW', 'LOAD_POPUP_VIEW', 'IMPORT_CAPTURE', 'HOSTED_ORIGINAL', 'SELECT', 'DOWNLOAD', 'DOWNLOAD_ZIP', 'RETRY_ARCHIVE', 'RESUME_ARCHIVE', 'REMOVE_ARCHIVE_RECORDS', 'OPEN_ARCHIVES', 'RESUME_DOWNLOADS'].includes(message.type)) return;
     (async () => {
       try {
         if (message.type === 'ANALYZE') {
@@ -193,6 +193,10 @@ export default defineBackground(() => {
             if (filter) state.selectionFilter = filter;
             await saveAnalysis(state);
           });
+        } else if (message.type === 'REMOVE_ARCHIVE_RECORDS') {
+          let count = 0;
+          await orderedDownload(async () => { count = await removeArchiveRecords(message.ids, message.completedOnly); });
+          respond({ ok: true, count }); return;
         } else if (message.type === 'OPEN_ARCHIVES') {
           let tabId: number | undefined;
           await orderedDownload(async () => { tabId = (await openArchivePage()).id; });

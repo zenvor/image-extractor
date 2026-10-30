@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Image Extractor
 
-Last updated: 2026-10-29. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
+Last updated: 2026-10-30. Prepared source/GitHub release version: 1.2.0. Last recorded Store submission: 1.0.0, Pending review on 2026-10-25 with automatic publication enabled. GitHub publication does not submit a Store update.
 
 ## Store listing
 
@@ -75,6 +75,8 @@ Privacy policy: https://gist.github.com/zenvor/054206a25dc00fe4cf1de693528d2635 
 | English screenshot | docs/screenshots/popup-en.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-en.jpg, 1280×800 |
 | Chinese screenshot | docs/screenshots/popup-zh-CN.jpg | Candidate SVG-logo preview; docs/store-assets/screenshot-zh.jpg, 1280×800 |
 | Small promotional tile | docs/store-assets/promo-440x280.svg | 440×280; generated PNG export available for Store upload |
+| Primary promotional suite | docs/store-assets/light/README.md | Three final light posters; placement exports and 4K masters |
+| Alternative promotional suite | docs/store-assets/real/README.md | Three retained NASA dark posters; placement exports and 4K masters |
 
 Vector artwork update (2026-10-26): `assets/logo-source.svg` is the single logo source; the earlier PNG source was removed. Both READMEs and the extension interface display SVG directly; manifest PNGs and both promotional tile formats are generated from it. Both localized screenshots were recaptured with the new logo in an isolated candidate preview (see docs/screenshots/README.md for scope). The existing published ZIPs and submitted Store assets still contain the earlier artwork. Review and upload the refreshed assets with the next Store submission; this source change does not submit an update.
 
@@ -100,8 +102,13 @@ Planned distribution: free, public. Confirm country/region settings in dashboard
 
 ## Version history
 
+Review fixes (2026-10-30): loading announcements initially follow the browser language, then the saved preference. Removing a completed retry record restores retry availability on its source task. The bilingual READMEs use the combined light showcase; Store screenshots remain separate.
+
+Popup loading update (2026-10-30): show skeleton placeholders for the header, sidebar controls and image gallery while restoring the page and settings. Refresh localized popup screenshots before Store submission.
+
 | Version | Date | Changes | Status |
 | --- | --- | --- | --- |
+| 1.2.1 | 2026-10-30 | Stack Download task and More on separate full-width rows in the popup sidebar; show image-type filters in a scrollable popover without shifting sidebar controls; simplify extraction-scope guidance; display each download task's creation date and time; add task search, status filters, individual record deletion and completed-record cleanup while keeping downloaded files; show skeleton placeholders while loading the task overview | Prepared for GitHub release; refreshed bilingual popup and download screenshots; Store submission remains separate |
 | 1.2.0 | 2026-10-29 | Preserve extracted results during lazy loading and scroll extraction; show 21 images per page without replaying selection animations; constrain tall and failed previews; streamline extraction, clipboard, export and language controls; refine rounded surfaces, hover feedback and checkbox contrast; keep settings stable while saving; improve download summaries, progress and failure-detail dialogs | Prepared for GitHub release; no new permissions; refresh popup and download-page screenshots before Store submission |
 | 1.1.0 | 2026-10-26 | Eleven image-host provider families for forum original lookup; optional detail access, cancellation and shared budgets | GitHub 1.1.0; not submitted to Chrome Web Store |
 | 1.0.0 | 2026-10-25 | First stable release; free extraction, supported original matching and ZIP downloads | Pending review; auto-publish enabled |

@@ -14,16 +14,42 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">Report an issue</a>
 </p>
 
-![Image preview, filters and manual selection in Chrome](docs/store-assets/screenshot-en.jpg)
+![Image Extractor: browse images and manage downloads](docs/store-assets/light/showcase-1600x864.png)
 
-Interface preview with NASA images. [Screenshot details](docs/screenshots/README.md).
+A light promotional suite featuring real landscape photography and the actual extension interface. The [NASA dark suite](docs/store-assets/real/README.md) is also available.
+
+<details>
+<summary>Individual feature posters and brand banner</summary>
+
+![Browse and select images](docs/store-assets/light/browse-1280x800.png)
+
+![Search, filter and clean up download records](docs/store-assets/light/downloads-1280x800.png)
+
+![Image Extractor brand banner](docs/store-assets/light/banner-1400x560.png)
+
+Image results are curated; download records are demonstration data. [High-resolution artwork and source details](docs/store-assets/light/README.md).
+
+</details>
+
+<details>
+<summary>Original interface screenshots and example webpage</summary>
+
+![English interface](docs/screenshots/popup-en.jpg)
+
+![Download manager](docs/screenshots/downloads-en.jpg)
+
+![WhatsApp example webpage](docs/screenshots/whatsapp-source.jpg)
+
+[Screenshot provenance and demonstration data](docs/screenshots/README.md).
+
+</details>
 
 ## Features
 
 - **Browse before downloading.** Preview page images in a grid or list, search and filter by format, then choose what to save.
 - **Find supported originals.** Resolve thumbnail addresses and image-host detail links, including images linked from ViperGirls posts and images on Duitang.
 - **Work across sources.** Extract from the current page, a batch of webpage URLs, or saved HTML files. Optional sources include CSS backgrounds, icons and embedded images.
-- **Keep downloads organized.** Save numbered images in ZIP archives and manage downloads from several pages together. Retry failed images or resume interrupted tasks when cached files are available.
+- **Keep downloads organized.** Save numbered images in ZIP archives and manage downloads from several pages together. Search tasks by title, filename or source URL, filter by status, and clear finished records without deleting downloaded files. Retry failed images or resume interrupted tasks when cached files are available.
 - **Use the links elsewhere.** Copy selected image URLs or export them as a TXT list.
 
 Free and open source. No account required. English and Simplified Chinese interfaces.
@@ -87,8 +113,9 @@ Issues and pull requests are welcome. For a bug report, include a public example
 
 ## Acknowledgements
 
+- Promotional photography comes from [ISO Republic](https://isorepublic.com/media-category/landscape/) and [NASA](https://www.nasa.gov/gallery/lunar-flyby/). [Credits, licenses and capture details](docs/store-assets/README.md).
 - [gallery-dl](https://github.com/mikf/gallery-dl) informed the image-host support through its public URL and page formats. See [reference and attribution details](docs/hosted-images.md#reference-and-attribution).
-- Preview imagery comes from NASA's [Artemis II Lunar Flyby gallery](https://www.nasa.gov/gallery/lunar-flyby/). [Image credits and screenshot details](docs/store-assets/README.md).
+- Interface examples use imagery from the [WhatsApp homepage](https://www.whatsapp.com/). WhatsApp and its imagery belong to their respective owners; no affiliation or endorsement is implied. [Screenshot and promotional asset details](docs/store-assets/README.md).
 
 ## License
 

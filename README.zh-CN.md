@@ -14,16 +14,42 @@
   <a href="https://github.com/zenvor/image-extractor-extension/issues">反馈问题</a>
 </p>
 
-![Chrome 中的图片预览、筛选和手动选图界面](docs/store-assets/screenshot-zh.jpg)
+![Image Extractor：图片浏览与下载管理](docs/store-assets/light/showcase-1600x864.png)
 
-使用 NASA 图像的界面预览。[截图说明](docs/screenshots/README.md)。
+使用真实风景照片和真实扩展界面的亮色宣传套图。另保留 [NASA 深色版](docs/store-assets/real/README.md)。
+
+<details>
+<summary>查看独立功能海报与品牌横幅</summary>
+
+![图片浏览与选择](docs/store-assets/light/browse-1280x800.png)
+
+![下载任务搜索、筛选与记录清理](docs/store-assets/light/downloads-1280x800.png)
+
+![Image Extractor 品牌横幅](docs/store-assets/light/banner-1400x560.png)
+
+图片结果经过精选，下载记录为演示数据。[高清素材与来源说明](docs/store-assets/light/README.md)。
+
+</details>
+
+<details>
+<summary>查看中英文原始界面截图与示例网页</summary>
+
+![简体中文界面](docs/screenshots/popup-zh-CN.jpg)
+
+![下载管理界面](docs/screenshots/downloads-zh-CN.jpg)
+
+![WhatsApp 示例网页](docs/screenshots/whatsapp-source.jpg)
+
+[截图来源与演示数据说明](docs/screenshots/README.md)。
+
+</details>
 
 ## 功能
 
 - **先预览，再下载：** 网格或列表浏览图片，按格式与文字筛选，选择需要保存的内容。
 - **匹配原图：** 解析已支持的缩略图地址和图床详情链接，适用于 ViperGirls 帖子中的图片、堆糖作品图等场景。
 - **处理多种来源：** 支持当前网页、批量网址和本地 HTML 文件，可选采集 CSS 背景、图标及内嵌图片。
-- **统一管理下载：** 图片按顺序编号并打包为 ZIP，在同一任务页管理多个网页的下载；支持仅重试失败图片，以及在有效缓存可用时恢复中断任务。
+- **统一管理下载：** 图片按顺序编号并打包为 ZIP，在同一任务页管理多个网页的下载；按标题、文件名或来源网址搜索任务，按状态筛选，清理已完成记录时保留下载文件；支持仅重试失败图片，以及在有效缓存可用时恢复中断任务。
 - **导出图片链接：** 复制所选图片网址，或保存为 TXT 清单。
 
 免费开源，无需账号。界面支持简体中文与英文。
@@ -87,8 +113,9 @@ npm run build
 
 ## 致谢
 
+- 宣传照片来自 [ISO Republic](https://isorepublic.com/media-category/landscape/) 和 [NASA](https://www.nasa.gov/gallery/lunar-flyby/)，详见[摄影署名、许可与截图说明](docs/store-assets/README.md)。
 - [gallery-dl](https://github.com/mikf/gallery-dl)：图床公开地址与页面格式的参考，详见[参考来源及实现说明](docs/hosted-images.md#reference-and-attribution)。
-- 预览图像来自 NASA 的 [Artemis II Lunar Flyby 图集](https://www.nasa.gov/gallery/lunar-flyby/)，详见[图像来源与截图说明](docs/store-assets/README.md)。
+- 界面示例使用 [WhatsApp 官网](https://www.whatsapp.com/)的图像。WhatsApp 品牌和图像归各自权利人所有，不表示合作或背书；详见[截图与宣传素材说明](docs/store-assets/README.md)。
 
 ## 许可证
 

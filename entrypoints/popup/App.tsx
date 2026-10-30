@@ -1,8 +1,9 @@
 import { DOWNLOAD_SPEED_KEY, noteDownloadResponse, withDownloadSlot } from '../../lib/downloadSpeed';
 import { hostedPageRequestUrl } from '../../lib/hostedImageHosts';
 import { resolveHostedPages } from '../../lib/resolveHostedPages';
-import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton, InputGroupText } from '../../components/ui/input-group';
+import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from '../../components/ui/input-group';
 import { Badge } from '../../components/ui/badge';
+import { Popover, PopoverTrigger, PopoverContent } from '../../components/ui/popover';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
 import { Toaster, toast } from '../../components/ui/sonner';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
@@ -10,6 +11,7 @@ import { Label } from '../../components/ui/label';
 import { useLocale } from '../../lib/useLocale';
 import { t, translateMessage } from '../../lib/i18n';
 import { previewState } from './preview';
+import { PopupSkeleton } from './PopupSkeleton';
 import { loadPopupSnapshot, matchingAnalysis, preview, workspace, type PopupSnapshot } from './bootstrap';
 import { normalizeCollectOptions } from '../../lib/collectOptions';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -43,7 +45,7 @@ export default function App({ initialSnapshot }: { initialSnapshot?: PopupSnapsh
     void loadPopupSnapshot().then(value => { if (mounted) setSnapshot(value); });
     return () => { mounted = false; };
   }, [initialSnapshot]);
-  return snapshot ? <PopupWorkspace initial={snapshot} /> : null;
+  return snapshot ? <PopupWorkspace initial={snapshot} /> : <PopupSkeleton preview={preview} />;
 }
 
 function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
@@ -442,10 +444,12 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
             <Switch id="original-mode" className="original-mode-switch" checked={filter === 'large'} onCheckedChange={chooseOriginalMode} disabled={running} />
           </section>
           <section className="sidebar-group sidebar-format-group" aria-labelledby="image-format-heading">
-            <div className="sidebar-group-heading"><h3 id="image-format-heading">{t("图片类型筛选")}</h3></div>
-            <InputGroup className="sidebar-field format-filters text-base md:text-sm" aria-labelledby="image-format-heading">
-              {formatCounts.length ? <div className="format-options">{formatCounts.map(({ format, count }) => <Badge asChild key={format}><button type="button" className="format-filter" data-format={format} aria-pressed={!excludedFormats.has(format)} onClick={() => toggleFormat(format)} title={t("筛选显示，不改变勾选")} disabled={running} aria-label={t('{0} 格式，{1} 张', [format, count])}><span>{format}</span><span className="format-count">({count})</span></button></Badge>)}</div> : <InputGroupText className="format-empty text-base md:text-sm">{t("暂无图像类型")}</InputGroupText>}
-            </InputGroup>
+            <Popover>
+              <h3 id="image-format-heading"><PopoverTrigger asChild><Button size="sm" variant="outline" className="w-full justify-between [&[data-state=open]>svg]:rotate-180">{t("图片类型筛选")}<ChevronDown className="text-muted-foreground" aria-hidden="true" /></Button></PopoverTrigger></h3>
+              <PopoverContent align="start" collisionPadding={12} className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-24px)] max-h-[min(240px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain p-2" aria-labelledby="image-format-heading">
+                {formatCounts.length ? <div className="format-options" role="group" aria-label={t("图片类型筛选")}>{formatCounts.map(({ format, count }) => <Badge asChild key={format}><button type="button" className="format-filter" data-format={format} aria-pressed={!excludedFormats.has(format)} onClick={() => toggleFormat(format)} title={t("筛选显示，不改变勾选")} disabled={running} aria-label={t('{0} 格式，{1} 张', [format, count])}><span>{format}</span><span className="format-count">({count})</span></button></Badge>)}</div> : <p className="text-sm text-muted-foreground">{t("暂无图像类型")}</p>}
+              </PopoverContent>
+            </Popover>
           </section>
           <section className="sidebar-group" aria-labelledby="image-search-heading">
             <Label id="image-search-heading" className="sr-only" htmlFor="image-search">{t("搜索图像")}</Label>
@@ -464,7 +468,7 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
           </div>
           <Button size="lg" className="zip-button" onClick={() => download()} disabled={starting || running || activeArchive || !chosen.length} aria-label={activeArchive ? t("下载任务进行中") : starting ? t("准备下载") : t('下载所选内容（{0}）', [chosen.length])}>{starting || activeArchive ? <LoaderCircle className="animate-spin" /> : <ArrowDownToLine />}{activeArchive ? downloadFeedback?.title : starting ? t("准备下载…") : t('下载所选内容（{0}）', [chosen.length])}</Button>
           <div className="sidebar-utility-actions">
-            <Button size="sm" variant="outline" className="copy-links-button col-span-2" onClick={() => copy()} disabled={running || !chosen.length} aria-label={copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")} title={t("复制选定的网址")} aria-live="polite">{copiedAt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")}</Button>
+            <Button size="sm" variant="outline" className="copy-links-button" onClick={() => copy()} disabled={running || !chosen.length} aria-label={copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")} title={t("复制选定的网址")} aria-live="polite">{copiedAt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")}</Button>
             <Button size="sm" variant="outline" className="view-task-button" onClick={viewTask}><ListTodo aria-hidden="true" />{t("下载任务")}</Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="more-actions-button" aria-label={t("更多操作")}><LayoutGrid aria-hidden="true" />{t("更多")}</Button></DropdownMenuTrigger>

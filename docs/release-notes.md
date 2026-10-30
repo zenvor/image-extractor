@@ -1,5 +1,11 @@
 # Release notes
 
+## [1.2.1 — Clearer controls and searchable download records](releases/1.2.1.md)
+
+Full-width popup actions, a scrollable format popover, startup skeletons, task timestamps, search, status filters and record cleanup. Refreshed bilingual interface screenshots.
+
+[GitHub release](https://github.com/zenvor/image-extractor-extension/releases/tag/v1.2.1)
+
 ## [1.2.0 — Smoother image browsing and clearer downloads](releases/1.2.0.md)
 
 Preserved results during lazy loading, steady selections across 21-image pages, streamlined popup actions, and a refined download task list with failure-detail dialogs.

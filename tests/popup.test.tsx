@@ -45,10 +45,15 @@ async function flushToasts() {
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 }
 async function click(selector: string) {
-  const element = container.querySelector<HTMLButtonElement>(selector);
+  if (selector.startsWith('.format-filter')) await openFormats();
+  const element = document.querySelector<HTMLButtonElement>(selector);
   expect(element, selector).not.toBeNull();
   await act(async () => { element!.click(); });
   await flushToasts();
+}
+async function openFormats() {
+  const trigger = container.querySelector<HTMLButtonElement>('#image-format-heading button')!;
+  if (trigger.getAttribute('aria-expanded') !== 'true') await act(async () => trigger.click());
 }
 async function chooseAction(selector: string) {
   const item = document.querySelector<HTMLElement>(selector);
@@ -130,7 +135,7 @@ it('never commits a fake extracting or zero-image frame while restoring a delaye
   await act(async () => {
     root = createRoot(container);
     root.render(<Profiler id="popup" onRender={() => {
-      if (container.querySelector('.gallery')) frames.push({
+      if (container.querySelector('.gallery[aria-busy]')) frames.push({
         busy: container.querySelector('.gallery')!.getAttribute('aria-busy'),
         count: container.querySelector('.visible-count')?.textContent || null,
         emptyFormats: !!container.querySelector('.format-empty'),
@@ -138,8 +143,10 @@ it('never commits a fake extracting or zero-image frame while restoring a delaye
     }}><App /></Profiler>);
   });
   expect(container.querySelector('.refresh-button')).toBeNull();
+  expect(container.querySelector('.popup-shell[aria-busy=true] [data-slot=skeleton]')).not.toBeNull();
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
   await act(async () => { finish({ analysis }); });
+  expect(container.querySelector('.popup-shell[aria-busy=true]')).toBeNull();
   expect(frames.length).toBeGreaterThan(0);
   expect(frames.every(frame => frame.busy === 'false' && frame.count === '3 张原图' && !frame.emptyFormats)).toBe(true);
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
@@ -275,7 +282,8 @@ it('restores search, type exclusions, background, page and scroll position after
   await mount();
   expect(send.mock.calls.some(([message]) => message.type === 'ANALYZE')).toBe(false);
   expect(container.querySelector<HTMLInputElement>('input[type=search]')?.value).toBe('photo');
-  expect(container.querySelector('.format-filter[data-format="PNG"]')?.getAttribute('aria-pressed')).toBe('false');
+  await openFormats();
+  expect(document.querySelector('.format-filter[data-format="PNG"]')?.getAttribute('aria-pressed')).toBe('false');
   expect(container.querySelector('.preview-background-control [role="checkbox"]')?.getAttribute('aria-checked')).toBe('true');
   expect(container.querySelector('.image-page-summary')?.textContent).toBe('2 / 3');
   expect(container.querySelector<HTMLDivElement>('.image-list')?.scrollTop).toBe(385);
@@ -467,12 +475,13 @@ it('filters several formats without losing hidden selections and resets an empty
   const mixed = results.map((item, index) => ({ ...item, url: item.url.replace('.jpg', ['.png', '.png', '.jpeg', '.jpeg', '.svg', '.svg'][index]!) }));
   analysis = { ...fixture(), results: mixed };
   await mount();
-  expect(container.querySelector('.format-filter[data-format=JPG]')?.textContent).toBe('JPG(1)');
-  expect(container.querySelector('.format-filter[data-format=PNG]')?.textContent).toBe('PNG(1)');
-  expect(container.querySelector('.format-filter[data-format=SVG]')?.textContent).toBe('SVG(1)');
+  await openFormats();
+  expect(document.querySelector('.format-filter[data-format=JPG]')?.textContent).toBe('JPG(1)');
+  expect(document.querySelector('.format-filter[data-format=PNG]')?.textContent).toBe('PNG(1)');
+  expect(document.querySelector('.format-filter[data-format=SVG]')?.textContent).toBe('SVG(1)');
   await click('.format-filter[data-format=SVG]');
   expect([...container.querySelectorAll('.image-item')].map(item => item.querySelector('.format-badge')?.textContent)).toEqual(['PNG', 'JPG']);
-  expect(container.querySelector('.format-filter[data-format=SVG]')?.getAttribute('aria-pressed')).toBe('false');
+  expect(document.querySelector('.format-filter[data-format=SVG]')?.getAttribute('aria-pressed')).toBe('false');
   expect(container.querySelector('.sidebar-group-heading button')).toBeNull();
   expectDownloadCount(3);
   await click('#image-L0');
@@ -491,7 +500,7 @@ it('filters several formats without losing hidden selections and resets an empty
   expect(container.querySelector('.empty [data-slot=empty-title]')?.textContent).toBe('没有符合条件的图像');
   await click('.empty button');
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
-  expect(container.querySelectorAll('.format-filter[aria-pressed=true]')).toHaveLength(3);
+  expect(document.querySelectorAll('.format-filter[aria-pressed=true]')).toHaveLength(3);
   expectDownloadCount(0);
 });
 it('changing image mode clears format restrictions without adding selections', async () => {
@@ -500,7 +509,7 @@ it('changing image mode clears format restrictions without adding selections', a
   expect(container.querySelectorAll('.image-item')).toHaveLength(0);
   await chooseType('全部（缩略图＋原图）');
   expect(analysis).toMatchObject({ selected: ['L0', 'L1', 'L2'], selectionMode: 'custom', selectionFilter: 'page' });
-  expect(container.querySelector('.format-filter[data-format=JPG]')?.textContent).toBe('JPG(3)');
+  expect(document.querySelector('.format-filter[data-format=JPG]')?.textContent).toBe('JPG(3)');
   expect(container.querySelectorAll('.image-item')).toHaveLength(3);
   expectDownloadCount(0);
 });

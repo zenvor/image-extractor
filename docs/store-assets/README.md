@@ -1,9 +1,37 @@
 # Chrome Web Store assets
 
-Refreshed on 2026-10-26 with the current SVG logo. [Screenshot provenance](../screenshots/README.md): a real Chrome rendering of an isolated candidate build, with a local preview fixture containing nine NASA lunar-flyby image URLs. The visible Preview badge identifies this as a demonstration. English shows two manual selections; Chinese shows zero. No downloads were started.
+Final promotional selection for 1.2.1: **two suites, three posters per suite, plus a combined light README showcase**. The light landscape suite is the primary presentation; the NASA dark suite remains available as an alternative. AI-generated promotional graphics are not included in the published artwork. Existing Store submissions are unchanged.
 
-The 3200×2400 native 4× screenshots in `docs/screenshots/` were uniformly reduced to 1024×768 and centered on a 1280×800 neutral canvas. No interface content was painted over or composited into the screenshots. These assets replace the earlier images in the repository; submitted Store assets and existing release packages are unchanged.
+## Promotional artwork
 
-Imagery credit: NASA. Third-party image rights remain with their owners. These examples do not imply NASA endorsement. See https://www.nasa.gov/nasa-brand-center/images-and-media/.
+### Primary: light landscapes
 
-The 440×280 promotional tile is generated from the current SVG logo and name. [`promo-440x280.svg`](promo-440x280.svg) is the scalable version; `promo-440x280.png` is its Store-compatible export. Regenerate both with `npm run icons`.
+White and lavender backgrounds, real ISO Republic photography, actual interface captures and restrained layered composition. [Placement exports, 4K masters and source details](light/README.md).
+
+![Combined browsing and download-management showcase](light/showcase-1600x864.png)
+
+![Browse and select](light/browse-1280x800.png)
+
+![Download management](light/downloads-1280x800.png)
+
+![Brand banner](light/banner-1400x560.png)
+
+### Alternative: NASA dark
+
+Real NASA photography and actual interface captures, with purple accents. [Placement exports, 4K masters and source details](real/README.md).
+
+![Browse and select](real/browse-1280x800.png)
+
+![Download management](real/downloads-1280x800.png)
+
+![Brand banner](real/banner-1400x560.png)
+
+Both suites provide 1280×800 browsing and download posters, 1400×560 banners, and high-resolution masters. Download task records are explicitly seeded demonstrations; action-button labels stay on one line. No product UI code changed during the artwork work.
+
+## Additional listing assets
+
+The bilingual **1280×800** `screenshot-en.jpg` and `screenshot-zh.jpg` remain browser captures of the current popup with a curated WhatsApp example. These are separate localized UI screenshots, not a third promotional suite. The [screenshot gallery](../screenshots/README.md) records their capture setup and credits.
+
+The existing logo-only 440×280 tile remains available as `promo-440x280.png`, with editable source `promo-440x280.svg`. It is not AI-generated; `npm run icons` regenerates it.
+
+Photography and screenshot provenance are documented with each suite. No third-party endorsement is implied. Publishing to the Chrome Web Store remains a separate action.
