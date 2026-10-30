@@ -156,6 +156,24 @@ it('explains the invalid URL and focuses it without opening pages or requesting 
   await click('批量提取');
   expect(create).toHaveBeenCalledTimes(1);
 });
+it('opens file selection from the upload area and imports files dropped onto it', async () => {
+  await htmlMode();
+  const input = container.querySelector<HTMLInputElement>('input[type=file]')!;
+  const picker = container.querySelector<HTMLButtonElement>('.tools-file-picker')!;
+  const open = vi.spyOn(input, 'click').mockImplementation(() => {});
+  await act(async () => picker.click());
+  expect(open).toHaveBeenCalledOnce();
+  open.mockRestore();
+  const drop = new Event('drop', { bubbles: true, cancelable: true });
+  Object.defineProperty(drop, 'dataTransfer', { value: { files: [new File(['<img src="https://a.test/a.jpg">'], 'dropped.html', { type: 'text/html' })] } });
+  await act(async () => picker.dispatchEvent(drop));
+  expect(drop.defaultPrevented).toBe(true);
+  expect(container.textContent).toContain('dropped.html');
+  expect(send).not.toHaveBeenCalled();
+  await click('开始导入');
+  expect(send.mock.calls.filter(([message]) => message.type === 'IMPORT_CAPTURE')).toHaveLength(1);
+  expect(container.textContent).toContain('1 页成功');
+});
 it('lets users review and remove selected files before explicitly importing them', async () => {
   await htmlMode();
   const first = new File(['<img src="https://a.test/a.jpg">'], 'first.html', { type: 'text/html' });

@@ -4,7 +4,7 @@ import { resolveHostedPages } from '../../lib/resolveHostedPages';
 import { InputGroup, InputGroupInput, InputGroupAddon, InputGroupButton } from '../../components/ui/input-group';
 import { Badge } from '../../components/ui/badge';
 import { Popover, PopoverTrigger, PopoverContent } from '../../components/ui/popover';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '../../components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../components/ui/dropdown-menu';
 import { Toaster, toast } from '../../components/ui/sonner';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../../components/ui/empty';
 import { Label } from '../../components/ui/label';
@@ -15,7 +15,7 @@ import { PopupSkeleton } from './PopupSkeleton';
 import { loadPopupSnapshot, matchingAnalysis, preview, workspace, type PopupSnapshot } from './bootstrap';
 import { normalizeCollectOptions } from '../../lib/collectOptions';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowDownToLine, Check, CheckCheck, ChevronDown, CircleAlert, CircleMinus, Globe2, Images, LoaderCircle, ScanSearch, X, Copy, FileText, ChevronsDown, Layers, ListTodo, Play, RotateCw, LayoutGrid } from 'lucide-react';
+import { ArrowDownToLine, Check, CheckCheck, ChevronDown, CircleAlert, CircleMinus, Globe2, Images, LoaderCircle, ScanSearch, X, Copy, FileText, ChevronsDown, Layers, ListTodo, Play, RotateCw } from 'lucide-react';
 import { LanguageControl } from '../../components/LanguageControl';
 import { Checkbox } from '../../components/ui/checkbox';
 import { ExtractionOptions } from '../../components/ExtractionOptions';
@@ -458,32 +458,34 @@ function PopupWorkspace({ initial }: { initial: PopupSnapshot }) {
           <DownloadSpeedControl preview={preview} initialSpeed={initial.local[DOWNLOAD_SPEED_KEY]} onError={setFeedback} />
           <ExtractionOptions preview={preview} initialOptions={normalizeCollectOptions(initial.local.collectOptions)} />
         </div>
-        <footer className="download-footer" aria-labelledby="download-heading">
-          <div className="sidebar-group download-selection">
-            <h3 id="download-heading">{t("下载")}</h3>
-            <div className="bulk-actions" role="group" aria-label={t("批量选择图像")}>
-              <Button size="sm" variant="outline" className="select-all-button" onClick={selectVisible} disabled={!visible.length} title={t("选中所有符合筛选条件的图像（包括其他分页）")}><CheckCheck aria-hidden="true" />{t("全选")}</Button>
-              <Button size="sm" variant="outline" className="deselect-all-button" onClick={clearSelection} disabled={!selected.length} title={t("取消所有图像的勾选，包括筛选隐藏的图像")}><CircleMinus aria-hidden="true" />{t("取消全选")}</Button>
+        <div className="sidebar-bottom">
+          <footer className="download-footer" aria-labelledby="download-heading">
+            <div className="sidebar-group download-selection">
+              <h3 id="download-heading">{t("下载")}</h3>
+              <div className="bulk-actions" role="group" aria-label={t("批量选择图像")}>
+                <Button size="sm" variant="outline" className="select-all-button" onClick={selectVisible} disabled={!visible.length} title={t("选中所有符合筛选条件的图像（包括其他分页）")}><CheckCheck aria-hidden="true" />{t("全选")}</Button>
+                <Button size="sm" variant="outline" className="deselect-all-button" onClick={clearSelection} disabled={!selected.length} title={t("取消所有图像的勾选，包括筛选隐藏的图像")}><CircleMinus aria-hidden="true" />{t("取消全选")}</Button>
+              </div>
             </div>
-          </div>
-          <Button size="lg" className="zip-button" onClick={() => download()} disabled={starting || running || activeArchive || !chosen.length} aria-label={activeArchive ? t("下载任务进行中") : starting ? t("准备下载") : t('下载所选内容（{0}）', [chosen.length])}>{starting || activeArchive ? <LoaderCircle className="animate-spin" /> : <ArrowDownToLine />}{activeArchive ? downloadFeedback?.title : starting ? t("准备下载…") : t('下载所选内容（{0}）', [chosen.length])}</Button>
-          <div className="sidebar-utility-actions">
-            <Button size="sm" variant="outline" className="copy-links-button" onClick={() => copy()} disabled={running || !chosen.length} aria-label={copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")} title={t("复制选定的网址")} aria-live="polite">{copiedAt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")}</Button>
-            <Button size="sm" variant="outline" className="view-task-button" onClick={viewTask}><ListTodo aria-hidden="true" />{t("下载任务")}</Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="more-actions-button" aria-label={t("更多操作")}><LayoutGrid aria-hidden="true" />{t("更多")}</Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top">
-                <DropdownMenuItem className="export-links-button" onSelect={exportLinks} disabled={running || !chosen.length} aria-label={t("导出选定链接为 TXT")}><FileText aria-hidden="true" />{t("导出 TXT")}</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="batch-tools-button" onSelect={openTools}><Layers aria-hidden="true" />{t("批量网址 / 导入 HTML")}</DropdownMenuItem>
-                {(canResumeArchive(archive) || canRetryArchive(archive)) && <DropdownMenuSeparator />}
-                {canResumeArchive(archive) && <DropdownMenuItem disabled={starting} onSelect={resumeIncomplete} aria-label={t("继续未完成下载")}><Play aria-hidden="true" />{t("继续下载")}</DropdownMenuItem>}
-                {canRetryArchive(archive) && <DropdownMenuItem className="retry-failed-button" disabled={starting || activeArchive} onSelect={retryFailed} aria-label={t("仅重试失败图像")} title={t("只下载失败图像，保留原文件名，另存为补充 ZIP")}><RotateCw aria-hidden="true" />{t("重试失败项")}</DropdownMenuItem>}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </footer>
-        <LanguageControl compact />
+            <Button size="lg" className="zip-button" onClick={() => download()} disabled={starting || running || activeArchive || !chosen.length} aria-label={activeArchive ? t("下载任务进行中") : starting ? t("准备下载") : t('下载所选内容（{0}）', [chosen.length])}>{starting || activeArchive ? <LoaderCircle className="animate-spin" /> : <ArrowDownToLine />}{activeArchive ? downloadFeedback?.title : starting ? t("准备下载…") : t('下载所选内容（{0}）', [chosen.length])}</Button>
+            <div className="sidebar-utility-actions">
+              <div className="flex items-center" role="group" aria-label={t("复制选定的网址")}>
+                <Button size="sm" variant="outline" className="copy-links-button min-w-0 flex-1 rounded-r-none" onClick={() => copy()} disabled={running || !chosen.length} aria-label={copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")} title={t("复制选定的网址")} aria-live="polite">{copiedAt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copiedAt ? t("已复制到剪贴板") : t("复制选定的网址")}</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild><Button size="icon-sm" variant="outline" className="export-links-trigger rounded-l-none border-l-0" disabled={running || !chosen.length} aria-label={t("导出选定网址为 TXT")}><ChevronDown aria-hidden="true" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" side="top">
+                    <DropdownMenuItem className="export-links-button" onSelect={exportLinks} aria-label={t("导出选定链接为 TXT")}><FileText aria-hidden="true" />{t("导出选定网址为 TXT")}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <Button size="sm" variant="outline" className="view-task-button" onClick={viewTask}><ListTodo aria-hidden="true" />{t("下载任务")}</Button>
+              <Button size="sm" variant="outline" className="batch-tools-button" onClick={openTools}><Layers aria-hidden="true" />{t("批量网址 / 导入 HTML")}</Button>
+              {canResumeArchive(archive) && <Button size="sm" variant="outline" disabled={starting} onClick={resumeIncomplete} aria-label={t("继续未完成下载")}><Play aria-hidden="true" />{t("继续下载")}</Button>}
+              {canRetryArchive(archive) && <Button size="sm" variant="outline" className="retry-failed-button" disabled={starting || activeArchive} onClick={retryFailed} aria-label={t("仅重试失败图像")} title={t("只下载失败图像，保留原文件名，另存为补充 ZIP")}><RotateCw aria-hidden="true" />{t("重试失败项")}</Button>}
+            </div>
+          </footer>
+          <LanguageControl compact />
+        </div>
       </aside>
       <div className="image-workspace">
         <section className="gallery" aria-busy={running}>

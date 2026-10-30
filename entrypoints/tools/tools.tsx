@@ -8,7 +8,7 @@ import { Label } from '../../components/ui/label';
 import { useLocale } from '../../lib/useLocale';
 import { t, translateMessage } from '../../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Check, CircleAlert, Download, ExternalLink, FileCode2, Files, Link, LoaderCircle, Square, Upload, X } from 'lucide-react';
+import { Check, CircleAlert, Download, ExternalLink, FileCode2, Files, Link, LoaderCircle, Square, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -254,7 +254,7 @@ export function Tools() {
                   <div className="tools-input-feedback"><p id="urls-feedback" className={inputError ? 'error' : ''} aria-live="polite">{translateMessage(inputError) || (uniqueCount ? t("{0} 个网页{1}", [uniqueCount, lineCount > uniqueCount ? t(" · 已忽略 {0} 个重复地址", [lineCount - uniqueCount]) : '']) : t("支持 HTTP / HTTPS 网址，重复地址会自动合并。"))}</p><Button type="button" variant="ghost" size="sm" disabled={busy || !urls} onClick={() => { setUrls(''); setInputError(''); urlInput.current?.focus(); }}>{t("清空")}</Button></div>
                 </div>
                 <div className="tools-option"><Checkbox id="batch-scroll" checked={scroll} onCheckedChange={value => setScroll(value === true)} disabled={busy} /><div><Label htmlFor="batch-scroll">{t("加载页面中的懒加载图像")}</Label><p>{t("提取前滚动最多 10 步，完成后恢复位置。")}</p></div></div>
-                <Button type="submit" disabled={busy}>{busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Link aria-hidden="true" />}{t("批量提取")}</Button>
+                <Button type="submit" disabled={busy}>{busy && <LoaderCircle className="animate-spin" aria-hidden="true" />}{t("批量提取")}</Button>
                 <p className="tools-hint">{t("网页将依次在后台打开，提取后保留，方便你检查。")}</p>
               </form>
             </TabsContent>
@@ -262,26 +262,25 @@ export function Tools() {
               <form className="tools-form" noValidate onSubmit={event => { event.preventDefault(); void importFiles(); }}>
                 <div className="tools-field">
                   <div className="tools-label-row"><Label htmlFor="html-files">{t("HTML 文件")}</Label><span>{files.length} {t("/ 20 个")}</span></div>
-                  <div className="tools-file-picker" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (!busy) addFiles([...event.dataTransfer.files]); }}>
-                    <Upload aria-hidden="true" /><strong>{t("将文件拖到这里")}</strong><p>{t("支持 HTML / HTM，单个文件不超过 16 MB")}</p>
-                    <Button type="button" variant="outline" disabled={busy} onClick={() => fileInput.current?.click()}>{t("选择 HTML 文件")}</Button>
-                    <Input ref={fileInput} id="html-files" name="files" className="sr-only" type="file" accept=".html,.htm,text/html" multiple disabled={busy} aria-invalid={!!fileError} aria-describedby="files-feedback" onChange={event => { addFiles([...(event.target.files || [])]); event.target.value = ''; }} />
-                  </div>
+                  <Button type="button" variant="outline" className="tools-file-picker" disabled={busy} aria-label={t("选择 HTML 文件")} onClick={() => fileInput.current?.click()} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (!busy) addFiles([...event.dataTransfer.files]); }}>
+                    <FileCode2 className="size-6" aria-hidden="true" /><span className="tools-file-picker-copy"><span>{t("点击选择或拖入 HTML 文件")}</span><span className="tools-file-picker-hint">{t("支持 HTML / HTM，单个文件不超过 16 MB")}</span></span>
+                  </Button>
+                  <Input ref={fileInput} id="html-files" name="files" className="sr-only" type="file" accept=".html,.htm,text/html" multiple disabled={busy} aria-invalid={!!fileError} aria-describedby="files-feedback" onChange={event => { addFiles([...(event.target.files || [])]); event.target.value = ''; }} />
                   <p id="files-feedback" className="error" aria-live="polite">{translateMessage(fileError)}</p>
                   {!!files.length && <div className="tools-field"><Label htmlFor="html-order">{t("文件处理顺序")}</Label><Select value={fileOrder} onValueChange={value => setFileOrder(value as HtmlFileOrder)} disabled={busy}><SelectTrigger id="html-order" className="w-full"><SelectValue /></SelectTrigger><SelectContent position="popper"><SelectItem value="selection">{t("选择顺序")}</SelectItem><SelectItem value="name">{t("文件名（自然排序）")}</SelectItem><SelectItem value="mtime-asc">{t("修改时间（从旧到新）")}</SelectItem><SelectItem value="mtime-desc">{t("修改时间（从新到旧）")}</SelectItem></SelectContent></Select></div>}
                   {!!files.length && <ul className="tools-file-list" aria-label={t("待导入文件")}>{sortedFiles.map(file => <li key={fileKey(file)}><FileCode2 aria-hidden="true" /><span title={file.name}>{file.name}<small>{Math.max(1, Math.ceil(file.size / 1024))} KB</small></span><Button type="button" variant="ghost" size="icon-sm" disabled={busy} aria-label={t("移除 {0}", [file.name])} onClick={() => { setFiles(current => current.filter(item => fileKey(item) !== fileKey(file))); setFileError(''); }}><X aria-hidden="true" /></Button></li>)}</ul>}
                 </div>
                 <div className="tools-field"><Label htmlFor="html-base">{t("原网页地址")} <span className="tools-optional">{t("选填")}</span></Label><Input ref={baseInput} id="html-base" name="base" type="url" value={base} placeholder="https://example.org/gallery/" spellCheck={false} autoCapitalize="none" disabled={busy} aria-invalid={!!baseError} aria-describedby="base-feedback" onChange={event => { setBase(event.target.value); setBaseError(''); }} /><p id="base-feedback" className={baseError ? 'error' : 'tools-hint'}>{translateMessage(baseError) || t("用于补全相对图像链接，应用于本次全部文件；文件自带有效 base 地址时可留空。")}</p></div>
-                <Button type="submit" disabled={busy}>{busy ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Upload aria-hidden="true" />}{t("开始导入")}</Button><p className="tools-hint">{t("只读取文件内容，不执行 HTML 中的脚本。")}</p>
+                <Button type="submit" disabled={busy}>{busy && <LoaderCircle className="animate-spin" aria-hidden="true" />}{t("开始导入")}</Button><p className="tools-hint">{t("只读取文件内容，不执行 HTML 中的脚本。")}</p>
               </form>
             </TabsContent>
           </Tabs>
         </Card>
         <Card className="tools-results" aria-labelledby="results-heading">
-          <div className="tools-results-heading"><div><h3 id="results-heading">{t("提取结果")}</h3><p>{rows.length ? t("{0} 页成功 · {1} 页失败{2}", [extracted, errors, stopped ? t(" · {0} 页未完成", [stopped]) : '']) : t("提取完成后，在这里检查并下载图像")}</p></div>{busy && <Button variant="outline" size="sm" onClick={stop}><Square aria-hidden="true" />{t("停止后续操作")}</Button>}</div>
+          <div className="tools-results-heading"><div><h3 id="results-heading">{t("提取结果")}</h3>{!!rows.length && <p>{t("{0} 页成功 · {1} 页失败{2}", [extracted, errors, stopped ? t(" · {0} 页未完成", [stopped]) : ''])}</p>}</div>{busy && <Button variant="outline" size="sm" onClick={stop}><Square aria-hidden="true" />{t("停止后续操作")}</Button>}</div>
           {!!rows.length && <div className="tools-progress"><div><span>{busy ? t("正在处理") : t("本轮处理结束")}</span><span>{processed} / {rows.length} {t("页")}</span></div><Progress value={processed / rows.length * 100} aria-label={t("网页处理进度")} /></div>}
           {message && <Alert role="status" className="tools-notice"><AlertDescription>{translateMessage(message)}</AlertDescription></Alert>}
-          {!rows.length ? <Empty className="tools-empty"><EmptyMedia variant="icon"><Files aria-hidden="true" /></EmptyMedia><EmptyTitle>{t("等待添加内容")}</EmptyTitle><EmptyDescription>{t("粘贴网址或选择 HTML 文件，")}<br />{t("然后开始提取。")}</EmptyDescription><ol><li>{t("添加来源")}</li><li>{t("检查图像")}</li><li>{t("下载所选")}</li></ol></Empty> : <>
+          {!rows.length ? <Empty className="tools-empty"><EmptyMedia variant="icon"><Files aria-hidden="true" /></EmptyMedia><EmptyTitle>{t("等待添加内容")}</EmptyTitle><EmptyDescription>{t("粘贴网址或选择 HTML 文件，")}<br />{t("然后开始提取。")}</EmptyDescription></Empty> : <>
             <ul className="tools-result-list">{rows.map((row, index) => <li key={row.id}>
               <div className="tools-row-heading"><span className="tools-row-index">{index + 1}</span><p title={row.title}>{row.title}</p><Badge variant="secondary" className="tools-row-state" data-state={row.phase}>{row.phase === 'running' ? <><LoaderCircle className="animate-spin" />{t("处理中")}</> : row.phase === 'failed' ? <><CircleAlert />{t("失败")}</> : row.phase === 'done' ? <><Check />{t("已提取")}</> : row.phase === 'stopped' ? t("未完成") : t("等待中")}</Badge></div>
               {row.warning && <Alert className="tools-notice" role="status"><AlertDescription>{translateMessage(row.warning)}</AlertDescription></Alert>}
